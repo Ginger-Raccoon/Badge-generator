@@ -1,6 +1,6 @@
 {
-  "name": "badge-gen-temp",
-  "productName": "badge-gen-temp",
+  "name": "badge-generator",
+  "productName": "Badge Generator",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",
