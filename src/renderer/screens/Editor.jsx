@@ -1,34 +1,37 @@
 import { useState, useEffect } from 'react'
 import {
   Box, AppBar, Toolbar, Typography, Button,
-  IconButton, Divider, Snackbar, Alert,
+  IconButton, Divider, Snackbar, Alert, TextField,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PSDViewer from '../components/PSDViewer'
 import ZoneList from '../components/ZoneList'
 import { readExcel } from '../utils/excel'
 import { generatePdf } from '../utils/generator'
+import { parsePsd } from '../utils/psd'
 
 export default function Editor({ project, onProjectUpdate, onBack }) {
   const [selectedZoneId, setSelectedZoneId] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [genProgress, setGenProgress] = useState(0)
+  const [dpiWarning, setDpiWarning] = useState(null)
+  const [dpiInput, setDpiInput] = useState('')
+  const [parsedPsd, setParsedPsd] = useState(null)
 
-  // Проверяем наличие файлов при открытии проекта
   useEffect(() => {
     async function checkFiles() {
-      const checks = []
+      const missing = []
       if (project.templatePsdPath) {
         const exists = await window.api.fileExists(project.templatePsdPath)
-        if (!exists) checks.push('PSD-шаблон')
+        if (!exists) missing.push('PSD-шаблон')
       }
       if (project.excelPath) {
         const exists = await window.api.fileExists(project.excelPath)
-        if (!exists) checks.push('Excel-файл')
+        if (!exists) missing.push('Excel-файл')
       }
-      if (checks.length > 0) {
-        setSnackbar(`Файлы не найдены: ${checks.join(', ')}. Загрузите их заново.`)
+      if (missing.length > 0) {
+        setSnackbar(`Файлы не найдены: ${missing.join(', ')}. Загрузите их заново.`)
       }
     }
     checkFiles()
@@ -40,9 +43,29 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
   }
 
   async function handleLoadPsd() {
-    const filePath = await window.api.openFileDialog([{ name: 'PSD', extensions: ['psd'] }])
+    const filePath = await window.api.openFileDialog([{ name: 'Photoshop', extensions: ['psd'] }])
     if (!filePath) return
-    await save({ ...project, templatePsdPath: filePath })
+    setParsedPsd(null)
+    setDpiWarning(null)
+    await save({ ...project, templatePsdPath: filePath, templateDpi: null, zones: [] })
+  }
+
+  function handlePsdParsed(parsed) {
+    setParsedPsd(parsed)
+    const effectiveDpi = project.templateDpi ?? parsed.resolution
+    if (parsed.resolutionMissing || parsed.resolution <= 96) {
+      setDpiWarning({ detected: parsed.resolution, missing: parsed.resolutionMissing })
+      setDpiInput(String(effectiveDpi))
+    } else {
+      setDpiWarning(null)
+    }
+  }
+
+  async function handleDpiApply() {
+    const dpi = parseInt(dpiInput, 10)
+    if (!dpi || dpi <= 0) return
+    await save({ ...project, templateDpi: dpi })
+    setDpiWarning(null)
   }
 
   async function handleLoadExcel() {
@@ -65,13 +88,21 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     setGenerating(true)
     setGenProgress(0)
     try {
-      const templateBytes = await window.api.readFileBytes(project.templatePsdPath)
+      let psd = parsedPsd
+      if (!psd) {
+        const bytes = await window.api.readFileBytes(project.templatePsdPath)
+        psd = await parsePsd(new Uint8Array(bytes))
+      }
+      const dpi = project.templateDpi ?? psd.resolution
       const excelBytes = await window.api.readFileBytes(project.excelPath)
       const fontBytes = await window.api.loadFonts()
       const { rows } = readExcel(Buffer.from(excelBytes))
 
       const pdfBytes = await generatePdf({
-        templateBytes,
+        pngBytes: psd.pngBytes,
+        psdWidth: psd.width,
+        psdHeight: psd.height,
+        dpi,
         fontBytes,
         zones: project.zones,
         rows,
@@ -99,6 +130,8 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     ? project.excelPath.split(/[\\/]/).pop()
     : 'Excel не загружен'
 
+  const canGenerate = project.templatePsdPath && project.excelPath && project.zones.length > 0 && !generating
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <AppBar position="static" elevation={1} color="default">
@@ -118,7 +151,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
           <Button
             variant="contained"
             size="small"
-            disabled={!project.templatePsdPath || !project.excelPath || project.zones.length === 0 || generating}
+            disabled={!canGenerate}
             onClick={handleGenerate}
           >
             Генерировать
@@ -131,6 +164,33 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
             </Typography>
           </Box>
         )}
+        {dpiWarning && (
+          <Alert
+            severity="warning"
+            onClose={() => setDpiWarning(null)}
+            action={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <TextField
+                  size="small"
+                  label="DPI"
+                  value={dpiInput}
+                  onChange={e => setDpiInput(e.target.value)}
+                  sx={{ width: 80 }}
+                  inputProps={{ inputMode: 'numeric' }}
+                />
+                <Button size="small" variant="outlined" onClick={handleDpiApply}>
+                  Применить
+                </Button>
+              </Box>
+            }
+          >
+            {dpiWarning.missing
+              ? 'DPI не задан в файле — размер страницы PDF может быть неверным.'
+              : `Обнаружен экранный DPI (${dpiWarning.detected} dpi) — файл, вероятно, создан для экрана, а не для печати.`
+            }
+            {' '}Исправьте в Photoshop: Image → Image Size → Resolution (без галки Resample), затем перезагрузите файл.
+          </Alert>
+        )}
       </AppBar>
 
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -141,7 +201,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
             onZonesChange={handleZonesChange}
             selectedZoneId={selectedZoneId}
             onSelectZone={setSelectedZoneId}
-            onPsdParsed={() => {}}
+            onPsdParsed={handlePsdParsed}
           />
         </Box>
         <Divider orientation="vertical" flexItem />
@@ -156,11 +216,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         </Box>
       </Box>
 
-      <Snackbar
-        open={!!snackbar}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar(null)}
-      >
+      <Snackbar open={!!snackbar} autoHideDuration={3000} onClose={() => setSnackbar(null)}>
         <Alert severity="success" onClose={() => setSnackbar(null)}>{snackbar}</Alert>
       </Snackbar>
     </Box>
