@@ -204,7 +204,6 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
                 key={zone.id}
                 zone={{ ...liveZone, ...coords }}
                 isSelected={zone.id === selectedZoneId}
-                onClick={e => { e.stopPropagation(); onSelectZone(zone.id) }}
                 onMoveStart={e => handleMoveStart(e, zone)}
                 onResizeStart={(e, corner) => handleResizeStart(e, zone, corner)}
               />

@@ -7,7 +7,7 @@ const CORNER_CURSORS = {
   br: 'nwse-resize',
 }
 
-export default function ZoneRect({ zone, isSelected, onClick, onMoveStart, onResizeStart }) {
+export default function ZoneRect({ zone, isSelected, onMoveStart, onResizeStart }) {
   const x = zone.canvasX
   const y = zone.canvasY
   const w = zone.canvasWidth
@@ -28,7 +28,7 @@ export default function ZoneRect({ zone, isSelected, onClick, onMoveStart, onRes
         stroke={isSelected ? '#1976d2' : '#1976d280'}
         strokeWidth={isSelected ? 2 : 1}
         style={{ cursor: 'move' }}
-        onMouseDown={e => { if (onMoveStart) onMoveStart(e); else onClick?.(e) }}
+        onMouseDown={e => onMoveStart?.(e)}
       />
       <text
         x={x + 4} y={y + 14}
