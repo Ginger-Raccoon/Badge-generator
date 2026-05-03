@@ -1,6 +1,6 @@
-const { ipcMain, dialog, app } = require('electron')
-const fs = require('fs')
-const path = require('path')
+import { ipcMain, dialog, app } from 'electron'
+import fs from 'fs'
+import path from 'path'
 
 const PROJECTS_DIR = path.join(app.getPath('documents'), 'BadgeGenerator')
 
