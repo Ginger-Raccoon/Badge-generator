@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+require('./main/ipc');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
