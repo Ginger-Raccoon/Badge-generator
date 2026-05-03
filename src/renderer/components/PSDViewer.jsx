@@ -39,7 +39,7 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
 
     render()
     return () => { cancelled = true }
-  }, [psdPath, onPsdParsed])
+  }, [psdPath])
 
   function getSvgPos(e) {
     const rect = e.currentTarget.getBoundingClientRect()
