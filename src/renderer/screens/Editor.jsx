@@ -7,10 +7,13 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import PDFViewer from '../components/PDFViewer'
 import ZoneList from '../components/ZoneList'
 import { readExcel } from '../utils/excel'
+import { generatePdf } from '../utils/generator'
 
 export default function Editor({ project, onProjectUpdate, onBack }) {
   const [selectedZoneId, setSelectedZoneId] = useState(null)
   const [snackbar, setSnackbar] = useState(null)
+  const [generating, setGenerating] = useState(false)
+  const [genProgress, setGenProgress] = useState(0)
 
   // Проверяем наличие файлов при открытии проекта
   useEffect(() => {
@@ -57,6 +60,37 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     await save({ ...project, zones })
   }
 
+  async function handleGenerate() {
+    if (generating) return
+    setGenerating(true)
+    setGenProgress(0)
+    try {
+      const templateBytes = await window.api.readFileBytes(project.templatePdfPath)
+      const excelBytes = await window.api.readFileBytes(project.excelPath)
+      const fontBytes = await window.api.loadFonts()
+      const { rows } = readExcel(Buffer.from(excelBytes))
+
+      const pdfBytes = await generatePdf({
+        templateBytes,
+        fontBytes,
+        zones: project.zones,
+        rows,
+        onProgress: (done, total) => setGenProgress(Math.round((done / total) * 100)),
+      })
+
+      const savePath = await window.api.saveFileDialog([{ name: 'PDF', extensions: ['pdf'] }])
+      if (savePath) {
+        await window.api.writeFileBytes(savePath, Array.from(pdfBytes))
+        setSnackbar(`Сохранено: ${savePath.split(/[\\/]/).pop()}`)
+      }
+    } catch (err) {
+      setSnackbar(`Ошибка: ${err.message}`)
+    } finally {
+      setGenerating(false)
+      setGenProgress(0)
+    }
+  }
+
   const pdfName = project.templatePdfPath
     ? project.templatePdfPath.split(/[\\/]/).pop()
     : 'PDF не загружен'
@@ -85,11 +119,18 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
             variant="contained"
             size="small"
             disabled={!project.templatePdfPath || !project.excelPath || project.zones.length === 0}
-            onClick={() => {}}
+            onClick={handleGenerate}
           >
             Генерировать
           </Button>
         </Toolbar>
+        {generating && (
+          <Box sx={{ px: 2, py: 0.5, bgcolor: 'primary.main' }}>
+            <Typography variant="caption" color="white">
+              Генерация... {genProgress}%
+            </Typography>
+          </Box>
+        )}
       </AppBar>
 
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
