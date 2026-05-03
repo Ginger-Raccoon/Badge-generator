@@ -118,7 +118,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
           <Button
             variant="contained"
             size="small"
-            disabled={!project.templatePdfPath || !project.excelPath || project.zones.length === 0}
+            disabled={!project.templatePdfPath || !project.excelPath || project.zones.length === 0 || generating}
             onClick={handleGenerate}
           >
             Генерировать
