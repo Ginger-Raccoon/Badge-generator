@@ -10,6 +10,8 @@ const FONTS = [
   { value: 'PTSerif', label: 'PT Serif' },
 ]
 
+const FONT_SIZES = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48]
+
 export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone, onZonesChange }) {
   function updateZone(id, patch) {
     onZonesChange(zones.map(z => z.id === id ? { ...z, ...patch } : z))
@@ -79,6 +81,18 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                   {FONTS.map(f => (
                     <MenuItem key={f.value} value={f.value}>{f.label}</MenuItem>
                   ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
+                <InputLabel shrink>Размер</InputLabel>
+                <Select
+                  value={zone.fontSize}
+                  label="Размер"
+                  notched
+                  onChange={e => updateZone(zone.id, { fontSize: e.target.value })}
+                >
+                  {FONT_SIZES.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
                 </Select>
               </FormControl>
             </ListItem>
