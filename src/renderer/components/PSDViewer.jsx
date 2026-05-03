@@ -63,17 +63,39 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
 
     if (inter.type === 'resizing' && inter.zoneId === zone.id) {
       const o = inter.origDocZone
-      let x = o.x, y = o.y, width = o.width, height = o.height
-      if (inter.corner === 'tl') { x += dx; y += dy; width -= dx; height -= dy }
-      else if (inter.corner === 'tr') {       y += dy; width += dx; height -= dy }
-      else if (inter.corner === 'bl') { x += dx;       width -= dx; height += dy }
-      else if (inter.corner === 'br') {                width += dx; height += dy }
-      width = Math.max(5, width)
-      height = Math.max(5, height)
-      x = Math.max(0, x)
-      y = Math.max(0, y)
-      if (x + width > sizes.psd.width) width = sizes.psd.width - x
-      if (y + height > sizes.psd.height) height = sizes.psd.height - y
+      let x, y, width, height
+
+      if (inter.corner === 'tl') {
+        const right = o.x + o.width
+        const bottom = o.y + o.height
+        x = Math.max(0, Math.min(right - 5, o.x + dx))
+        y = Math.max(0, Math.min(bottom - 5, o.y + dy))
+        width = right - x
+        height = bottom - y
+      } else if (inter.corner === 'tr') {
+        const bottom = o.y + o.height
+        const right = Math.min(sizes.psd.width, Math.max(o.x + 5, o.x + o.width + dx))
+        x = o.x
+        y = Math.max(0, Math.min(bottom - 5, o.y + dy))
+        width = right - x
+        height = bottom - y
+      } else if (inter.corner === 'bl') {
+        const right = o.x + o.width
+        const bottom = Math.min(sizes.psd.height, Math.max(o.y + 5, o.y + o.height + dy))
+        x = Math.max(0, Math.min(right - 5, o.x + dx))
+        y = o.y
+        width = right - x
+        height = bottom - y
+      } else {
+        // br
+        const right = Math.min(sizes.psd.width, Math.max(o.x + 5, o.x + o.width + dx))
+        const bottom = Math.min(sizes.psd.height, Math.max(o.y + 5, o.y + o.height + dy))
+        x = o.x
+        y = o.y
+        width = right - x
+        height = bottom - y
+      }
+
       return { x, y, width, height }
     }
 
