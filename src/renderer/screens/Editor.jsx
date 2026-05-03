@@ -31,7 +31,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         if (!exists) missing.push('Excel-файл')
       }
       if (missing.length > 0) {
-        setSnackbar(`Файлы не найдены: ${missing.join(', ')}. Загрузите их заново.`)
+        setSnackbar({ message: `Файлы не найдены: ${missing.join(', ')}. Загрузите их заново.`, severity: 'warning' })
       }
     }
     checkFiles()
@@ -52,6 +52,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
 
   function handlePsdParsed(parsed) {
     setParsedPsd(parsed)
+    if (project.templateDpi != null) return
     const effectiveDpi = project.templateDpi ?? parsed.resolution
     if (parsed.resolutionMissing || parsed.resolution <= 96) {
       setDpiWarning({ detected: parsed.resolution, missing: parsed.resolutionMissing })
@@ -76,7 +77,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     const bytes = await window.api.readFileBytes(filePath)
     const { columns } = readExcel(Buffer.from(bytes))
     await save({ ...project, excelPath: filePath, columns })
-    setSnackbar(`Загружено ${columns.length} столбцов`)
+    setSnackbar({ message: `Загружено ${columns.length} столбцов`, severity: 'success' })
   }
 
   async function handleZonesChange(zones) {
@@ -112,10 +113,10 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       const savePath = await window.api.saveFileDialog([{ name: 'PDF', extensions: ['pdf'] }])
       if (savePath) {
         await window.api.writeFileBytes(savePath, Array.from(pdfBytes))
-        setSnackbar(`Сохранено: ${savePath.split(/[\\/]/).pop()}`)
+        setSnackbar({ message: `Сохранено: ${savePath.split(/[\\/]/).pop()}`, severity: 'success' })
       }
     } catch (err) {
-      setSnackbar(`Ошибка: ${err.message}`)
+      setSnackbar({ message: `Ошибка: ${err.message}`, severity: 'error' })
     } finally {
       setGenerating(false)
       setGenProgress(0)
@@ -217,7 +218,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       </Box>
 
       <Snackbar open={!!snackbar} autoHideDuration={3000} onClose={() => setSnackbar(null)}>
-        <Alert severity="success" onClose={() => setSnackbar(null)}>{snackbar}</Alert>
+        <Alert severity={snackbar?.severity ?? 'success'} onClose={() => setSnackbar(null)}>{snackbar?.message}</Alert>
       </Snackbar>
     </Box>
   )
