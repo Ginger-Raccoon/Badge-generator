@@ -1,3 +1,16 @@
+import { useState } from 'react'
+import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
+import HomeScreen from './screens/HomeScreen'
+
+const theme = createTheme()
+
 export default function App() {
-  return <h1>Badge Generator</h1>
+  const [project, setProject] = useState(null)
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <HomeScreen onOpenProject={setProject} />
+    </ThemeProvider>
+  )
 }
