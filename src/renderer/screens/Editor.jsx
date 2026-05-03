@@ -53,7 +53,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
   function handlePsdParsed(parsed) {
     setParsedPsd(parsed)
     if (project.templateDpi != null) return
-    const effectiveDpi = project.templateDpi ?? parsed.resolution
+    const effectiveDpi = parsed.resolution
     if (parsed.resolutionMissing || parsed.resolution <= 96) {
       setDpiWarning({ detected: parsed.resolution, missing: parsed.resolutionMissing })
       setDpiInput(String(effectiveDpi))
