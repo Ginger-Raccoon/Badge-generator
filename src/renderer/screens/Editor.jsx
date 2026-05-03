@@ -74,10 +74,14 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       { name: 'Excel', extensions: ['xlsx', 'xls'] },
     ])
     if (!filePath) return
-    const bytes = await window.api.readFileBytes(filePath)
-    const { columns } = readExcel(Buffer.from(bytes))
-    await save({ ...project, excelPath: filePath, columns })
-    setSnackbar({ message: `Загружено ${columns.length} столбцов`, severity: 'success' })
+    try {
+      const bytes = await window.api.readFileBytes(filePath)
+      const { columns } = readExcel(new Uint8Array(bytes))
+      await save({ ...project, excelPath: filePath, columns })
+      setSnackbar({ message: `Загружено ${columns.length} столбцов`, severity: 'success' })
+    } catch (err) {
+      setSnackbar({ message: `Ошибка загрузки Excel: ${err.message}`, severity: 'error' })
+    }
   }
 
   async function handleZonesChange(zones) {
@@ -97,7 +101,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       const dpi = project.templateDpi ?? psd.resolution
       const excelBytes = await window.api.readFileBytes(project.excelPath)
       const fontBytes = await window.api.loadFonts()
-      const { rows } = readExcel(Buffer.from(excelBytes))
+      const { rows } = readExcel(new Uint8Array(excelBytes))
 
       const pdfBytes = await generatePdf({
         pngBytes: psd.pngBytes,

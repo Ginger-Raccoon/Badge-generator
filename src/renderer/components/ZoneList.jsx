@@ -54,12 +54,13 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
               </Box>
 
               <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
-                <InputLabel>Столбец</InputLabel>
+                <InputLabel shrink>Столбец</InputLabel>
                 <Select
                   value={zone.column}
                   label="Столбец"
                   onChange={e => updateZone(zone.id, { column: e.target.value })}
                   displayEmpty
+                  notched
                 >
                   <MenuItem value=""><em>Не выбрано</em></MenuItem>
                   {columns.map(col => (
