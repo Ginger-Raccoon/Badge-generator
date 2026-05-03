@@ -4,7 +4,7 @@ import {
   IconButton, Divider, Snackbar, Alert,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
-import PDFViewer from '../components/PDFViewer'
+import PSDViewer from '../components/PSDViewer'
 import ZoneList from '../components/ZoneList'
 import { readExcel } from '../utils/excel'
 import { generatePdf } from '../utils/generator'
@@ -19,9 +19,9 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
   useEffect(() => {
     async function checkFiles() {
       const checks = []
-      if (project.templatePdfPath) {
-        const exists = await window.api.fileExists(project.templatePdfPath)
-        if (!exists) checks.push('PDF-шаблон')
+      if (project.templatePsdPath) {
+        const exists = await window.api.fileExists(project.templatePsdPath)
+        if (!exists) checks.push('PSD-шаблон')
       }
       if (project.excelPath) {
         const exists = await window.api.fileExists(project.excelPath)
@@ -39,10 +39,10 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     onProjectUpdate(updated)
   }
 
-  async function handleLoadPdf() {
-    const filePath = await window.api.openFileDialog([{ name: 'PDF', extensions: ['pdf'] }])
+  async function handleLoadPsd() {
+    const filePath = await window.api.openFileDialog([{ name: 'PSD', extensions: ['psd'] }])
     if (!filePath) return
-    await save({ ...project, templatePdfPath: filePath })
+    await save({ ...project, templatePsdPath: filePath })
   }
 
   async function handleLoadExcel() {
@@ -65,7 +65,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     setGenerating(true)
     setGenProgress(0)
     try {
-      const templateBytes = await window.api.readFileBytes(project.templatePdfPath)
+      const templateBytes = await window.api.readFileBytes(project.templatePsdPath)
       const excelBytes = await window.api.readFileBytes(project.excelPath)
       const fontBytes = await window.api.loadFonts()
       const { rows } = readExcel(Buffer.from(excelBytes))
@@ -91,9 +91,9 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     }
   }
 
-  const pdfName = project.templatePdfPath
-    ? project.templatePdfPath.split(/[\\/]/).pop()
-    : 'PDF не загружен'
+  const psdName = project.templatePsdPath
+    ? project.templatePsdPath.split(/[\\/]/).pop()
+    : 'PSD не загружен'
 
   const excelName = project.excelPath
     ? project.excelPath.split(/[\\/]/).pop()
@@ -109,8 +109,8 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
           <Typography variant="subtitle1" sx={{ flex: 1 }}>
             {project.name}
           </Typography>
-          <Button size="small" onClick={handleLoadPdf} sx={{ mr: 1 }}>
-            {pdfName}
+          <Button size="small" onClick={handleLoadPsd} sx={{ mr: 1 }}>
+            {psdName}
           </Button>
           <Button size="small" onClick={handleLoadExcel} sx={{ mr: 1 }}>
             {excelName}
@@ -118,7 +118,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
           <Button
             variant="contained"
             size="small"
-            disabled={!project.templatePdfPath || !project.excelPath || project.zones.length === 0 || generating}
+            disabled={!project.templatePsdPath || !project.excelPath || project.zones.length === 0 || generating}
             onClick={handleGenerate}
           >
             Генерировать
@@ -135,12 +135,13 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
 
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#e0e0e0', display: 'flex', justifyContent: 'center', p: 2 }}>
-          <PDFViewer
-            pdfPath={project.templatePdfPath}
+          <PSDViewer
+            psdPath={project.templatePsdPath}
             zones={project.zones}
             onZonesChange={handleZonesChange}
             selectedZoneId={selectedZoneId}
             onSelectZone={setSelectedZoneId}
+            onPsdParsed={() => {}}
           />
         </Box>
         <Divider orientation="vertical" flexItem />

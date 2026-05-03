@@ -1,43 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { Box, Typography } from '@mui/material'
-import * as pdfjsLib from 'pdfjs-dist'
+import { parsePsd } from '../utils/psd'
 import ZoneRect from './ZoneRect'
-import { canvasToPdf, pdfToCanvas } from '../utils/coordinates'
+import { canvasToDoc, docToCanvas } from '../utils/coordinates'
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).href
-
-export default function PDFViewer({ pdfPath, zones, onZonesChange, selectedZoneId, onSelectZone }) {
+export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneId, onSelectZone, onPsdParsed }) {
   const canvasRef = useRef(null)
   const [sizes, setSizes] = useState(null)
   const [drawing, setDrawing] = useState(null)
 
   useEffect(() => {
-    if (!pdfPath) return
+    if (!psdPath) return
     let cancelled = false
 
     async function render() {
-      const bytes = await window.api.readFileBytes(pdfPath)
+      const bytes = await window.api.readFileBytes(psdPath)
       if (cancelled) return
-      const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(bytes) }).promise
-      const page = await pdf.getPage(1)
-      const viewport = page.getViewport({ scale: 1.5 })
+      const parsed = await parsePsd(new Uint8Array(bytes))
+      if (cancelled) return
+      onPsdParsed?.(parsed)
+
+      const blob = new Blob([parsed.pngBytes], { type: 'image/png' })
+      const bitmap = await createImageBitmap(blob)
+      if (cancelled) return
+
       const canvas = canvasRef.current
-      if (!canvas || cancelled) return
-      canvas.width = viewport.width
-      canvas.height = viewport.height
+      if (!canvas) return
+      const displayScale = Math.min(1, 900 / parsed.width)
+      canvas.width = Math.round(parsed.width * displayScale)
+      canvas.height = Math.round(parsed.height * displayScale)
+      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+
       setSizes({
-        canvas: { width: viewport.width, height: viewport.height },
-        pdf: { width: page.view[2], height: page.view[3] },
+        canvas: { width: canvas.width, height: canvas.height },
+        psd: { width: parsed.width, height: parsed.height },
       })
-      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise
     }
 
     render()
     return () => { cancelled = true }
-  }, [pdfPath])
+  }, [psdPath, onPsdParsed])
 
   function getSvgPos(e) {
     const rect = e.currentTarget.getBoundingClientRect()
@@ -65,37 +67,34 @@ export default function PDFViewer({ pdfPath, zones, onZonesChange, selectedZoneI
     setDrawing(null)
     if (w < 5 || h < 5) return
 
-    const pdfCoords = canvasToPdf({ x, y, width: w, height: h }, sizes.canvas, sizes.pdf)
-    const newZone = {
+    const docCoords = canvasToDoc({ x, y, width: w, height: h }, sizes.canvas, sizes.psd)
+    onZonesChange([...zones, {
       id: crypto.randomUUID(),
       label: `Зона ${zones.length + 1}`,
-      ...pdfCoords,
+      ...docCoords,
       column: '',
       font: 'Roboto',
       fontSize: 12,
-    }
-    onZonesChange([...zones, newZone])
+    }])
   }
 
   function toCanvasCoords(zone) {
     if (!sizes) return null
-    const c = pdfToCanvas(zone, sizes.canvas, sizes.pdf)
+    const c = docToCanvas(zone, sizes.canvas, sizes.psd)
     return { canvasX: c.x, canvasY: c.y, canvasWidth: c.width, canvasHeight: c.height }
   }
 
-  const drawingRect = drawing
-    ? {
-        x: Math.min(drawing.startX, drawing.currentX),
-        y: Math.min(drawing.startY, drawing.currentY),
-        w: Math.abs(drawing.currentX - drawing.startX),
-        h: Math.abs(drawing.currentY - drawing.startY),
-      }
-    : null
+  const drawingRect = drawing ? {
+    x: Math.min(drawing.startX, drawing.currentX),
+    y: Math.min(drawing.startY, drawing.currentY),
+    w: Math.abs(drawing.currentX - drawing.startX),
+    h: Math.abs(drawing.currentY - drawing.startY),
+  } : null
 
-  if (!pdfPath) {
+  if (!psdPath) {
     return (
       <Box sx={{ p: 4, color: 'text.secondary' }}>
-        <Typography>Загрузите PDF-шаблон</Typography>
+        <Typography>Загрузите PSD-шаблон</Typography>
       </Box>
     )
   }
