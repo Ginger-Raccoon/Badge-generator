@@ -31,7 +31,8 @@ ipcMain.handle('projects:create', (_, name) => {
   const project = {
     version: 1,
     name,
-    templatePdfPath: null,
+    templatePsdPath: null,
+    templateDpi: null,
     excelPath: null,
     columns: [],
     zones: [],
