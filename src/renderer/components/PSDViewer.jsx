@@ -47,8 +47,10 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
   }, [psdPath])
 
   useEffect(() => {
+    let cancelled = false
     async function loadFonts() {
       const fontBytes = await window.api.loadFonts()
+      if (cancelled) return
       const entries = [
         ['Roboto', fontBytes.roboto, 'Roboto-preview'],
         ['PTSerif', fontBytes.ptSerif, 'PTSerif-preview'],
@@ -56,12 +58,14 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
       for (const [name, bytes, family] of entries) {
         const face = new FontFace(family, bytes)
         await face.load()
+        if (cancelled) return
         document.fonts.add(face)
         fontsRef.current[name] = family
       }
       setFontsReady(true)
     }
     loadFonts()
+    return () => { cancelled = true }
   }, [])
 
   function getSvgPos(e) {
