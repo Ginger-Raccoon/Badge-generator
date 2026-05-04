@@ -104,19 +104,19 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         const bytes = await window.api.readFileBytes(project.templatePsdPath)
         psd = await parsePsd(new Uint8Array(bytes))
       }
-      const dpi = project.templateDpi ?? psd.resolution
+      const effectiveDpi = project.templateDpi ?? psd.resolution
       const excelBytes = await window.api.readFileBytes(project.excelPath)
       const fontBytes = await window.api.loadFonts()
-      const { rows } = readExcel(new Uint8Array(excelBytes))
+      const { rows: excelRows } = readExcel(new Uint8Array(excelBytes))
 
       const pdfBytes = await generatePdf({
         pngBytes: psd.pngBytes,
         psdWidth: psd.width,
         psdHeight: psd.height,
-        dpi,
+        dpi: effectiveDpi,
         fontBytes,
         zones: project.zones,
-        rows,
+        rows: excelRows,
         onProgress: (done, total) => setGenProgress(Math.round((done / total) * 100)),
       })
 
