@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { wrapText } from '../../src/renderer/utils/textLayout.js'
+import { wrapText, splitValue } from '../../src/renderer/utils/textLayout.js'
 
 // measureFn: длина строки в символах (каждый символ = 1 единица)
 const measure = (str, _size) => str.length
@@ -28,5 +28,31 @@ describe('wrapText', () => {
 
   it('пустая строка возвращает массив с одной пустой строкой', () => {
     expect(wrapText('', 20, 12, measure)).toEqual([''])
+  })
+})
+
+describe('splitValue', () => {
+  it('splitIndex null — возвращает полное значение', () => {
+    expect(splitValue('Иванов, Иван', null, '', ',')).toBe('Иванов, Иван')
+  })
+
+  it('column splitChar, index 0', () => {
+    expect(splitValue('Иванов, Иван', 0, '', ',')).toBe('Иванов')
+  })
+
+  it('column splitChar, index 1', () => {
+    expect(splitValue('Иванов, Иван', 1, '', ',')).toBe(' Иван')
+  })
+
+  it('zone splitChar перекрывает column splitChar', () => {
+    expect(splitValue('a|b', 0, '|', ',')).toBe('a')
+  })
+
+  it('несуществующий index — возвращает пустую строку', () => {
+    expect(splitValue('Иванов', 2, '', ',')).toBe('')
+  })
+
+  it('нет символа (ни zone, ни column) — возвращает полное значение', () => {
+    expect(splitValue('Иванов, Иван', 0, '', '')).toBe('Иванов, Иван')
   })
 })

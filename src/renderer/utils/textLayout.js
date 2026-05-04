@@ -15,3 +15,11 @@ export function wrapText(text, maxWidth, fontSize, measureFn) {
   if (current) lines.push(current)
   return lines.length > 0 ? lines : ['']
 }
+
+export function splitValue(value, splitIndex, zoneSplitChar, columnSplitChar) {
+  if (splitIndex == null) return String(value)
+  const char = zoneSplitChar || columnSplitChar || ''
+  if (!char) return String(value)
+  const parts = String(value).split(char)
+  return parts[splitIndex] ?? ''
+}
