@@ -1,7 +1,7 @@
 import {
   Box, Typography, List, ListItem, ListItemText,
   Select, MenuItem, FormControl, InputLabel, IconButton,
-  Divider, TextField,
+  Divider, TextField, Checkbox,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 
@@ -64,8 +64,16 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                 value={columnSplits[col] ?? ''}
                 onChange={e => onColumnSplitsChange?.({ ...columnSplits, [col]: e.target.value })}
                 placeholder="например , или |"
-                sx={{ width: 110 }}
+                sx={{ width: 70 }}
               />
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Checkbox
+                  size="small"
+                  checked={(columnSplits[col] ?? '') === ' '}
+                  onChange={e => onColumnSplitsChange?.({ ...columnSplits, [col]: e.target.checked ? ' ' : '' })}
+                />
+                <Typography variant="caption">пробел</Typography>
+              </Box>
             </Box>
           ))}
         </Box>
@@ -127,19 +135,28 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                         )}
                       </Select>
                     </FormControl>
-                    <TextField
-                      size="small"
-                      fullWidth
-                      label="Символ"
-                      value={zone.splitChar ?? ''}
-                      onChange={e => updateZone(zone.id, { splitChar: e.target.value })}
-                      placeholder={
-                        columnSplits[zone.column]
-                          ? `пустым — используется символ столбца (${columnSplits[zone.column]})`
-                          : 'пустым — разбивка не применяется'
-                      }
-                      onClick={e => e.stopPropagation()}
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }} onClick={e => e.stopPropagation()}>
+                      <TextField
+                        size="small"
+                        sx={{ flex: 1 }}
+                        label="Символ"
+                        value={zone.splitChar ?? ''}
+                        onChange={e => updateZone(zone.id, { splitChar: e.target.value })}
+                        placeholder={
+                          columnSplits[zone.column]
+                            ? `пустым — символ столбца (${columnSplits[zone.column] === ' ' ? '␣' : columnSplits[zone.column]})`
+                            : 'пустым — разбивка не применяется'
+                        }
+                      />
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Checkbox
+                          size="small"
+                          checked={(zone.splitChar ?? '') === ' '}
+                          onChange={e => updateZone(zone.id, { splitChar: e.target.checked ? ' ' : '' })}
+                        />
+                        <Typography variant="caption">пробел</Typography>
+                      </Box>
+                    </Box>
                   </>
                 )
               })()}
