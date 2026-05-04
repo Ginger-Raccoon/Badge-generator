@@ -94,5 +94,7 @@ ipcMain.handle('prefs:save', (_, prefs) => {
 
 ipcMain.handle('projects:delete', (_, name) => {
   const projectDir = path.join(PROJECTS_DIR, name)
-  fs.rmSync(projectDir, { recursive: true })
+  if (fs.existsSync(projectDir)) {
+    fs.rmSync(projectDir, { recursive: true })
+  }
 })
