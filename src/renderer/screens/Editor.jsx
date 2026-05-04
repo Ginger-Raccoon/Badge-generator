@@ -4,6 +4,8 @@ import {
   IconButton, Divider, Snackbar, Alert, TextField,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import PSDViewer from '../components/PSDViewer'
 import ZoneList from '../components/ZoneList'
 import { readExcel } from '../utils/excel'
@@ -18,6 +20,8 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
   const [dpiWarning, setDpiWarning] = useState(null)
   const [dpiInput, setDpiInput] = useState('')
   const [parsedPsd, setParsedPsd] = useState(null)
+  const [rows, setRows] = useState([])
+  const [previewRowIndex, setPreviewRowIndex] = useState(0)
 
   useEffect(() => {
     async function checkFiles() {
@@ -76,8 +80,10 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     if (!filePath) return
     try {
       const bytes = await window.api.readFileBytes(filePath)
-      const { columns } = readExcel(new Uint8Array(bytes))
+      const { columns, rows: loadedRows } = readExcel(new Uint8Array(bytes))
       await save({ ...project, excelPath: filePath, columns })
+      setRows(loadedRows)
+      setPreviewRowIndex(0)
       setSnackbar({ message: `Загружено ${columns.length} столбцов`, severity: 'success' })
     } catch (err) {
       setSnackbar({ message: `Ошибка загрузки Excel: ${err.message}`, severity: 'error' })
@@ -136,6 +142,9 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     : 'Excel не загружен'
 
   const canGenerate = project.templatePsdPath && project.excelPath && project.zones.length > 0 && !generating
+
+  const previewRow = rows[previewRowIndex] ?? null
+  const dpi = project.templateDpi ?? parsedPsd?.resolution ?? null
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -199,15 +208,40 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       </AppBar>
 
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <Box sx={{ flex: 1, overflow: 'auto', bgcolor: '#e0e0e0', display: 'flex', justifyContent: 'center', p: 2 }}>
-          <PSDViewer
-            psdPath={project.templatePsdPath}
-            zones={project.zones}
-            onZonesChange={handleZonesChange}
-            selectedZoneId={selectedZoneId}
-            onSelectZone={setSelectedZoneId}
-            onPsdParsed={handlePsdParsed}
-          />
+        <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#e0e0e0' }}>
+          {rows.length > 0 && (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 0.5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+              <IconButton size="small" disabled={previewRowIndex === 0} onClick={() => setPreviewRowIndex(i => i - 1)}>
+                <ChevronLeftIcon fontSize="small" />
+              </IconButton>
+              <TextField
+                size="small"
+                value={previewRowIndex + 1}
+                onChange={e => {
+                  const v = parseInt(e.target.value, 10)
+                  if (!isNaN(v)) setPreviewRowIndex(Math.max(0, Math.min(rows.length - 1, v - 1)))
+                }}
+                inputProps={{ min: 1, max: rows.length, style: { textAlign: 'center', width: 40 } }}
+                sx={{ width: 60 }}
+              />
+              <Typography variant="body2" color="text.secondary">/ {rows.length}</Typography>
+              <IconButton size="small" disabled={previewRowIndex === rows.length - 1} onClick={() => setPreviewRowIndex(i => i + 1)}>
+                <ChevronRightIcon fontSize="small" />
+              </IconButton>
+            </Box>
+          )}
+          <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', justifyContent: 'center', p: 2 }}>
+            <PSDViewer
+              psdPath={project.templatePsdPath}
+              zones={project.zones}
+              onZonesChange={handleZonesChange}
+              selectedZoneId={selectedZoneId}
+              onSelectZone={setSelectedZoneId}
+              onPsdParsed={handlePsdParsed}
+              previewRow={previewRow}
+              dpi={dpi}
+            />
+          </Box>
         </Box>
         <Divider orientation="vertical" flexItem />
         <Box sx={{ width: 300, overflow: 'auto' }}>
