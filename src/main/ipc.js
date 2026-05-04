@@ -1,6 +1,7 @@
 import { ipcMain, dialog, app } from 'electron'
 import fs from 'fs'
 import path from 'path'
+import { loadPrefs, savePrefs } from './prefs.js'
 
 const PROJECTS_DIR = path.join(app.getPath('documents'), 'BadgeGenerator')
 
@@ -79,4 +80,19 @@ ipcMain.handle('fonts:loadAll', () => {
     roboto: Array.from(fs.readFileSync(path.join(dir, 'Roboto-Regular.ttf'))),
     ptSerif: Array.from(fs.readFileSync(path.join(dir, 'PTSerif-Regular.ttf'))),
   }
+})
+
+ipcMain.handle('prefs:load', () => {
+  ensureProjectsDir()
+  return loadPrefs(PROJECTS_DIR)
+})
+
+ipcMain.handle('prefs:save', (_, prefs) => {
+  ensureProjectsDir()
+  savePrefs(PROJECTS_DIR, prefs)
+})
+
+ipcMain.handle('projects:delete', (_, name) => {
+  const projectDir = path.join(PROJECTS_DIR, name)
+  fs.rmSync(projectDir, { recursive: true })
 })
