@@ -64,6 +64,7 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                 value={columnSplits[col] ?? ''}
                 onChange={e => onColumnSplitsChange?.({ ...columnSplits, [col]: e.target.value })}
                 placeholder="например , или |"
+                disabled={(columnSplits[col] ?? '') === ' '}
                 sx={{ width: 70 }}
               />
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -142,6 +143,7 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                         label="Символ"
                         value={zone.splitChar ?? ''}
                         onChange={e => updateZone(zone.id, { splitChar: e.target.value })}
+                        disabled={(zone.splitChar ?? '') === ' '}
                         placeholder={
                           columnSplits[zone.column]
                             ? `пустым — символ столбца (${columnSplits[zone.column] === ' ' ? '␣' : columnSplits[zone.column]})`
