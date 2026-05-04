@@ -11,4 +11,7 @@ contextBridge.exposeInMainWorld('api', {
   writeFileBytes:(filePath, d)  => ipcRenderer.invoke('fs:writeBytes', filePath, d),
   fileExists:    (filePath)     => ipcRenderer.invoke('fs:exists', filePath),
   loadFonts:     ()             => ipcRenderer.invoke('fonts:loadAll'),
+  loadPrefs:     ()             => ipcRenderer.invoke('prefs:load'),
+  savePrefs:     (prefs)        => ipcRenderer.invoke('prefs:save', prefs),
+  deleteProject: (name)         => ipcRenderer.invoke('projects:delete', name),
 })
