@@ -117,6 +117,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         fontBytes,
         zones: project.zones,
         rows: excelRows,
+        columnSplits: project.columnSplits ?? {},
         onProgress: (done, total) => setGenProgress(Math.round((done / total) * 100)),
       })
 
@@ -240,6 +241,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
               onPsdParsed={handlePsdParsed}
               previewRow={previewRow}
               dpi={dpi}
+              columnSplits={project.columnSplits ?? {}}
             />
           </Box>
         </Box>
@@ -251,6 +253,9 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
             selectedZoneId={selectedZoneId}
             onSelectZone={setSelectedZoneId}
             onZonesChange={handleZonesChange}
+            columnSplits={project.columnSplits ?? {}}
+            onColumnSplitsChange={splits => save({ ...project, columnSplits: splits })}
+            previewRow={previewRow}
           />
         </Box>
       </Box>
