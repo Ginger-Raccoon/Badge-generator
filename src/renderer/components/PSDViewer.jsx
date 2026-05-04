@@ -3,9 +3,9 @@ import { Box, Typography } from '@mui/material'
 import { parsePsd } from '../utils/psd'
 import ZoneRect from './ZoneRect'
 import { canvasToDoc, docToCanvas } from '../utils/coordinates'
-import { wrapText } from '../utils/textLayout'
+import { wrapText, splitValue } from '../utils/textLayout'
 
-export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneId, onSelectZone, onPsdParsed, previewRow, dpi }) {
+export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneId, onSelectZone, onPsdParsed, previewRow, dpi, columnSplits = {} }) {
   const canvasRef = useRef(null)
   const svgRef = useRef(null)
   const [sizes, setSizes] = useState(null)
@@ -81,8 +81,10 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
 
   function getPreviewLines(zone, coords) {
     if (!fontsReady || !previewRow || !zone.column || !dpi || !sizes) return null
-    const value = previewRow[zone.column]
-    if (value == null || value === '') return null
+    const rawValue = previewRow[zone.column]
+    if (rawValue == null || rawValue === '') return null
+    const value = splitValue(rawValue, zone.splitIndex ?? null, zone.splitChar ?? '', columnSplits[zone.column] ?? '')
+    if (value === '') return null
     const fontFamily = fontsRef.current[zone.font] ?? fontsRef.current['Roboto']
     if (!fontFamily) return null
     const displayScale = sizes.canvas.width / sizes.psd.width
@@ -194,6 +196,8 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
         column: '',
         font: 'Roboto',
         fontSize: 12,
+        splitIndex: null,
+        splitChar: '',
       }])
     } else {
       const zone = zones.find(z => z.id === interaction.zoneId)
