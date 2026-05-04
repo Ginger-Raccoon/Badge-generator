@@ -1,5 +1,6 @@
 import { PDFDocument } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
+import { wrapText } from './textLayout.js'
 
 export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontBytes, zones, rows, onProgress }) {
   const scale = 72 / dpi
@@ -23,11 +24,21 @@ export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontByte
     for (const zone of zones) {
       const value = row[zone.column]
       if (value == null || value === '') continue
-      page.drawText(String(value), {
-        x: zone.x * scale,
-        y: pageHeight - (zone.y + zone.height) * scale,
-        size: zone.fontSize,
-        font: fonts[zone.font] ?? robotoFont,
+      const font = fonts[zone.font] ?? robotoFont
+      const maxWidthPt = zone.width * (72 / dpi)
+      const lines = wrapText(String(value), maxWidthPt, zone.fontSize, (str, size) => font.widthOfTextAtSize(str, size))
+      const lineHeight = zone.fontSize * 1.2
+      const totalHeight = (lines.length - 1) * lineHeight + zone.fontSize
+      const zoneCenterY = pageHeight - (zone.y + zone.height / 2) * scale
+      const firstBaselineY = zoneCenterY + totalHeight / 2 - zone.fontSize
+
+      lines.forEach((line, i) => {
+        page.drawText(line, {
+          x: zone.x * scale,
+          y: firstBaselineY - i * lineHeight,
+          size: zone.fontSize,
+          font,
+        })
       })
     }
 
