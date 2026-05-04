@@ -3,12 +3,16 @@ import { Box, Typography } from '@mui/material'
 import { parsePsd } from '../utils/psd'
 import ZoneRect from './ZoneRect'
 import { canvasToDoc, docToCanvas } from '../utils/coordinates'
+import { wrapText } from '../utils/textLayout'
 
-export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneId, onSelectZone, onPsdParsed }) {
+export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneId, onSelectZone, onPsdParsed, previewRow, dpi }) {
   const canvasRef = useRef(null)
   const svgRef = useRef(null)
   const [sizes, setSizes] = useState(null)
   const [interaction, setInteraction] = useState(null)
+  const fontsRef = useRef({})
+  const measureCanvasRef = useRef(document.createElement('canvas'))
+  const [fontsReady, setFontsReady] = useState(false)
 
   useEffect(() => {
     if (!psdPath) return
@@ -42,9 +46,48 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
     return () => { cancelled = true }
   }, [psdPath])
 
+  useEffect(() => {
+    async function loadFonts() {
+      const fontBytes = await window.api.loadFonts()
+      const entries = [
+        ['Roboto', fontBytes.roboto, 'Roboto-preview'],
+        ['PTSerif', fontBytes.ptSerif, 'PTSerif-preview'],
+      ]
+      for (const [name, bytes, family] of entries) {
+        const face = new FontFace(family, bytes)
+        await face.load()
+        document.fonts.add(face)
+        fontsRef.current[name] = family
+      }
+      setFontsReady(true)
+    }
+    loadFonts()
+  }, [])
+
   function getSvgPos(e) {
     const rect = svgRef.current.getBoundingClientRect()
     return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+  }
+
+  function measureText(text, fontSize, fontFamily) {
+    const ctx = measureCanvasRef.current.getContext('2d')
+    ctx.font = `${fontSize}px '${fontFamily}'`
+    return ctx.measureText(text).width
+  }
+
+  function getPreviewLines(zone, coords) {
+    if (!fontsReady || !previewRow || !zone.column || !dpi || !sizes) return null
+    const value = previewRow[zone.column]
+    if (value == null || value === '') return null
+    const fontFamily = fontsRef.current[zone.font] ?? fontsRef.current['Roboto']
+    if (!fontFamily) return null
+    const displayScale = sizes.canvas.width / sizes.psd.width
+    const svgFontSize = zone.fontSize * (dpi / 72) * displayScale
+    const lines = wrapText(String(value), coords.canvasWidth, svgFontSize, (str, size) => measureText(str, size, fontFamily))
+    const lineHeight = svgFontSize * 1.2
+    const totalHeight = (lines.length - 1) * lineHeight + svgFontSize
+    const startY = coords.canvasY + (coords.canvasHeight - totalHeight) / 2 + svgFontSize
+    return { fontFamily, fontSize: svgFontSize, lines, lineHeight, startY }
   }
 
   function computeLiveZone(zone, inter) {
@@ -199,14 +242,30 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
               : zone
             const coords = toCanvasCoords(liveZone)
             if (!coords) return null
+            const preview = getPreviewLines(zone, coords)
             return (
-              <ZoneRect
-                key={zone.id}
-                zone={{ ...liveZone, ...coords }}
-                isSelected={zone.id === selectedZoneId}
-                onMoveStart={e => handleMoveStart(e, zone)}
-                onResizeStart={(e, corner) => handleResizeStart(e, zone, corner)}
-              />
+              <g key={zone.id}>
+                <ZoneRect
+                  zone={{ ...liveZone, ...coords }}
+                  isSelected={zone.id === selectedZoneId}
+                  onMoveStart={e => handleMoveStart(e, zone)}
+                  onResizeStart={(e, corner) => handleResizeStart(e, zone, corner)}
+                />
+                {preview && (
+                  <text
+                    fontFamily={preview.fontFamily}
+                    fontSize={preview.fontSize}
+                    fill="#222"
+                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                  >
+                    {preview.lines.map((line, lineIndex) => (
+                      <tspan key={lineIndex} x={coords.canvasX + 2} y={preview.startY + lineIndex * preview.lineHeight}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                )}
+              </g>
             )
           })}
           {drawingRect && (
