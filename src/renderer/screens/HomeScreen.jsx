@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import {
   Box, Typography, Button, List, ListItem, ListItemButton,
   ListItemText, Dialog, DialogTitle, DialogContent,
-  DialogActions, TextField, AppBar, Toolbar,
+  DialogActions, TextField, AppBar, Toolbar, IconButton, Divider,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import StarIcon from '@mui/icons-material/Star'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
+import DeleteIcon from '@mui/icons-material/Delete'
 
 export default function HomeScreen({ onOpenProject }) {
   const [projects, setProjects] = useState([])
@@ -40,6 +43,52 @@ export default function HomeScreen({ onOpenProject }) {
     onOpenProject(project)
   }
 
+  async function toggleFavorite(e, name) {
+    e.stopPropagation()
+    const next = favorites.includes(name)
+      ? favorites.filter(f => f !== name)
+      : [...favorites, name]
+    setFavorites(next)
+    const prefs = await window.api.loadPrefs()
+    await window.api.savePrefs({ ...prefs, favorites: next })
+  }
+
+  async function confirmDelete(name) {
+    const prefs = await window.api.loadPrefs()
+    const nextFavorites = favorites.filter(f => f !== name)
+    await window.api.savePrefs({ ...prefs, favorites: nextFavorites })
+    await window.api.deleteProject(name)
+    setFavorites(nextFavorites)
+    setProjects(prev => prev.filter(p => p !== name))
+  }
+
+  function handleDeleteClick(e, name) {
+    e.stopPropagation()
+    if (skipDeleteConfirm) {
+      confirmDelete(name)
+    } else {
+      setDeleteConfirmChecked(false)
+      setPendingDelete(name)
+    }
+  }
+
+  function renderItem(name) {
+    const isFav = favorites.includes(name)
+    return (
+      <ListItem key={name} disablePadding sx={{ border: 1, borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
+        <ListItemButton onClick={() => handleOpen(name)}>
+          <ListItemText primary={name} />
+          <IconButton size="small" onClick={e => toggleFavorite(e, name)} sx={{ mr: 0.5 }}>
+            {isFav ? <StarIcon fontSize="small" color="primary" /> : <StarBorderIcon fontSize="small" />}
+          </IconButton>
+          <IconButton size="small" onClick={e => handleDeleteClick(e, name)}>
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </ListItemButton>
+      </ListItem>
+    )
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <AppBar position="static" elevation={1} color="default">
@@ -64,15 +113,23 @@ export default function HomeScreen({ onOpenProject }) {
           {projects.length === 0 ? 'Нет проектов' : 'Ваши проекты'}
         </Typography>
 
-        <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {projects.map(name => (
-            <ListItem key={name} disablePadding sx={{ border: 1, borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
-              <ListItemButton onClick={() => handleOpen(name)}>
-                <ListItemText primary={name} />
-              </ListItemButton>
-            </ListItem>
-          ))}
-        </List>
+        {(() => {
+          const favList = projects.filter(n => favorites.includes(n))
+          const otherList = projects.filter(n => !favorites.includes(n))
+          return (
+            <>
+              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {favList.map(renderItem)}
+              </List>
+              {favList.length > 0 && otherList.length > 0 && (
+                <Divider sx={{ my: 1.5 }} />
+              )}
+              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {otherList.map(renderItem)}
+              </List>
+            </>
+          )
+        })()}
       </Box>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
