@@ -25,17 +25,17 @@ export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontByte
       const value = row[zone.column]
       if (value == null || value === '') continue
       const font = fonts[zone.font] ?? robotoFont
-      const maxWidthPt = zone.width * (72 / dpi)
+      const maxWidthPt = zone.width * scale
       const lines = wrapText(String(value), maxWidthPt, zone.fontSize, (str, size) => font.widthOfTextAtSize(str, size))
       const lineHeight = zone.fontSize * 1.2
       const totalHeight = (lines.length - 1) * lineHeight + zone.fontSize
       const zoneCenterY = pageHeight - (zone.y + zone.height / 2) * scale
       const firstBaselineY = zoneCenterY + totalHeight / 2 - zone.fontSize
 
-      lines.forEach((line, i) => {
+      lines.forEach((line, lineIndex) => {
         page.drawText(line, {
           x: zone.x * scale,
-          y: firstBaselineY - i * lineHeight,
+          y: firstBaselineY - lineIndex * lineHeight,
           size: zone.fontSize,
           font,
         })
