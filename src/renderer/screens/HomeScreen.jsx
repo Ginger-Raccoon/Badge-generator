@@ -50,23 +50,21 @@ export default function HomeScreen({ onOpenProject }) {
       ? favorites.filter(f => f !== name)
       : [...favorites, name]
     setFavorites(next)
-    const prefs = await window.api.loadPrefs()
-    await window.api.savePrefs({ ...prefs, favorites: next })
+    await window.api.savePrefs({ favorites: next, skipDeleteConfirm })
   }
 
   async function confirmDelete(name) {
-    const prefs = await window.api.loadPrefs()
     const nextFavorites = favorites.filter(f => f !== name)
-    await window.api.savePrefs({ ...prefs, favorites: nextFavorites })
+    await window.api.savePrefs({ favorites: nextFavorites, skipDeleteConfirm })
     await window.api.deleteProject(name)
     setFavorites(nextFavorites)
     setProjects(prev => prev.filter(p => p !== name))
   }
 
-  function handleDeleteClick(e, name) {
+  async function handleDeleteClick(e, name) {
     e.stopPropagation()
     if (skipDeleteConfirm) {
-      confirmDelete(name)
+      await confirmDelete(name)
     } else {
       setDeleteConfirmChecked(false)
       setPendingDelete(name)
@@ -74,18 +72,21 @@ export default function HomeScreen({ onOpenProject }) {
   }
 
   async function handleConfirmDelete() {
-    const prefs = await window.api.loadPrefs()
-    const nextFavorites = favorites.filter(f => f !== pendingDelete)
-    await window.api.savePrefs({
-      ...prefs,
-      skipDeleteConfirm: deleteConfirmChecked ? true : prefs.skipDeleteConfirm,
-      favorites: nextFavorites,
-    })
-    if (deleteConfirmChecked) setSkipDeleteConfirm(true)
-    await window.api.deleteProject(pendingDelete)
-    setFavorites(nextFavorites)
-    setProjects(prev => prev.filter(p => p !== pendingDelete))
-    setPendingDelete(null)
+    try {
+      const nextFavorites = favorites.filter(f => f !== pendingDelete)
+      await window.api.savePrefs({
+        favorites: nextFavorites,
+        skipDeleteConfirm: deleteConfirmChecked || skipDeleteConfirm,
+      })
+      if (deleteConfirmChecked) setSkipDeleteConfirm(true)
+      await window.api.deleteProject(pendingDelete)
+      setFavorites(nextFavorites)
+      setProjects(prev => prev.filter(p => p !== pendingDelete))
+      setPendingDelete(null)
+    } catch (err) {
+      console.error('Ошибка при удалении проекта:', err)
+      setPendingDelete(null)
+    }
   }
 
   function renderItem(name) {
@@ -104,6 +105,9 @@ export default function HomeScreen({ onOpenProject }) {
       </ListItem>
     )
   }
+
+  const favList = projects.filter(n => favorites.includes(n))
+  const otherList = projects.filter(n => !favorites.includes(n))
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -129,23 +133,17 @@ export default function HomeScreen({ onOpenProject }) {
           {projects.length === 0 ? 'Нет проектов' : 'Ваши проекты'}
         </Typography>
 
-        {(() => {
-          const favList = projects.filter(n => favorites.includes(n))
-          const otherList = projects.filter(n => !favorites.includes(n))
-          return (
-            <>
-              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {favList.map(renderItem)}
-              </List>
-              {favList.length > 0 && otherList.length > 0 && (
-                <Divider sx={{ my: 1.5 }} />
-              )}
-              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {otherList.map(renderItem)}
-              </List>
-            </>
-          )
-        })()}
+        <>
+          <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {favList.map(renderItem)}
+          </List>
+          {favList.length > 0 && otherList.length > 0 && (
+            <Divider sx={{ my: 1.5 }} />
+          )}
+          <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {otherList.map(renderItem)}
+          </List>
+        </>
       </Box>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
