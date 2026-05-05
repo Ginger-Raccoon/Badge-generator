@@ -3,6 +3,7 @@ import {
   Box, Typography, Button, List, ListItem, ListItemButton,
   ListItemText, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, AppBar, Toolbar, IconButton, Divider,
+  Checkbox, FormControlLabel,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import StarIcon from '@mui/icons-material/Star'
@@ -70,6 +71,21 @@ export default function HomeScreen({ onOpenProject }) {
       setDeleteConfirmChecked(false)
       setPendingDelete(name)
     }
+  }
+
+  async function handleConfirmDelete() {
+    const prefs = await window.api.loadPrefs()
+    const nextFavorites = favorites.filter(f => f !== pendingDelete)
+    await window.api.savePrefs({
+      ...prefs,
+      skipDeleteConfirm: deleteConfirmChecked ? true : prefs.skipDeleteConfirm,
+      favorites: nextFavorites,
+    })
+    if (deleteConfirmChecked) setSkipDeleteConfirm(true)
+    await window.api.deleteProject(pendingDelete)
+    setFavorites(nextFavorites)
+    setProjects(prev => prev.filter(p => p !== pendingDelete))
+    setPendingDelete(null)
   }
 
   function renderItem(name) {
@@ -149,6 +165,28 @@ export default function HomeScreen({ onOpenProject }) {
           <Button onClick={() => setDialogOpen(false)}>Отмена</Button>
           <Button onClick={handleCreate} variant="contained" disabled={!newName.trim()}>
             Создать
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!pendingDelete} onClose={() => setPendingDelete(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Удалить «{pendingDelete}»?</DialogTitle>
+        <DialogContent>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={deleteConfirmChecked}
+                onChange={e => setDeleteConfirmChecked(e.target.checked)}
+                size="small"
+              />
+            }
+            label="Больше не спрашивать"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingDelete(null)}>Отмена</Button>
+          <Button onClick={handleConfirmDelete} variant="contained" color="error">
+            Удалить
           </Button>
         </DialogActions>
       </Dialog>
