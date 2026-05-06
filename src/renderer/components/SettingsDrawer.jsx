@@ -8,13 +8,14 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 
 export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, projects, onDeleteAll }) {
-  const [fontSizeInput, setFontSizeInput] = useState(String(prefs.defaultFontSize))
+  const { defaultFontSize } = prefs
+  const [fontSizeInput, setFontSizeInput] = useState(String(prefs.defaultFontSize ?? 12))
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmInput, setConfirmInput] = useState('')
 
   useEffect(() => {
-    if (open) setFontSizeInput(String(prefs.defaultFontSize))
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (open) setFontSizeInput(String(defaultFontSize))
+  }, [open, defaultFontSize])
 
   function handleFontSizeBlur() {
     const v = parseInt(fontSizeInput, 10)
