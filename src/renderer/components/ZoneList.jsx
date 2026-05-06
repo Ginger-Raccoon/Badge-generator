@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import {
-  Box, Typography, List, ListItem, ListItemText,
+  Box, Typography, List, ListItem, ListItemText, Collapse,
   Select, MenuItem, FormControl, InputLabel, IconButton,
   Divider, TextField, Checkbox, Tooltip, InputAdornment,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 
 const FONTS = [
   { value: 'Roboto', label: 'Roboto' },
@@ -14,6 +17,16 @@ const FONTS = [
 const FONT_SIZES = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48]
 
 export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone, onZonesChange, columnSplits = {}, onColumnSplitsChange, previewRow }) {
+  const [collapsedZones, setCollapsedZones] = useState(new Set())
+
+  function toggleCollapse(id) {
+    setCollapsedZones(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
   function updateZone(id, patch) {
     onZonesChange(zones.map(z => z.id === id ? { ...z, ...patch } : z))
   }
@@ -92,114 +105,125 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
             <ListItem
               selected={zone.id === selectedZoneId}
               onClick={() => onSelectZone(zone.id)}
-              sx={{ flexDirection: 'column', alignItems: 'stretch', gap: 1, py: 1.5, cursor: 'pointer' }}
+              sx={{ flexDirection: 'column', alignItems: 'stretch', py: 1.5, cursor: 'pointer' }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <ListItemText primary={zone.label} primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }} />
+              <Box
+                sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                onClick={() => toggleCollapse(zone.id)}
+              >
+                {collapsedZones.has(zone.id)
+                  ? <ExpandMoreIcon fontSize="small" sx={{ color: 'text.secondary', flexShrink: 0 }} />
+                  : <ExpandLessIcon fontSize="small" sx={{ color: 'text.secondary', flexShrink: 0 }} />
+                }
+                <ListItemText primary={zone.label} primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }} sx={{ flex: 1, m: 0 }} />
                 <IconButton size="small" onClick={e => { e.stopPropagation(); deleteZone(zone.id) }}>
                   <DeleteIcon fontSize="small" />
                 </IconButton>
               </Box>
 
-              <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
-                <InputLabel shrink>Столбец</InputLabel>
-                <Select
-                  value={zone.column}
-                  label="Столбец"
-                  onChange={e => updateZone(zone.id, { column: e.target.value })}
-                  displayEmpty
-                  notched
-                >
-                  <MenuItem value=""><em>Не выбрано</em></MenuItem>
-                  {columns.map(col => (
-                    <MenuItem key={col} value={col}>{col}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              <Collapse in={!collapsedZones.has(zone.id)}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, pt: 1 }}>
+                  <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
+                    <InputLabel shrink>Столбец</InputLabel>
+                    <Select
+                      value={zone.column}
+                      label="Столбец"
+                      onChange={e => updateZone(zone.id, { column: e.target.value })}
+                      displayEmpty
+                      notched
+                    >
+                      <MenuItem value=""><em>Не выбрано</em></MenuItem>
+                      {columns.map(col => (
+                        <MenuItem key={col} value={col}>{col}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-              {zone.column && (() => {
-                const effectiveChar = zone.splitChar || columnSplits[zone.column] || ''
-                const options = effectiveChar ? getSplitOptions(zone) : []
-                return (
-                  <>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }} onClick={e => e.stopPropagation()}>
-                      <TextField
-                        size="small"
-                        sx={{ flex: 1 }}
-                        label="Символ"
-                        value={zone.splitChar ?? ''}
-                        onChange={e => updateZone(zone.id, { splitChar: e.target.value })}
-                        disabled={(zone.splitChar ?? '') === ' '}
-                        placeholder="символ разделения"
-                        slotProps={{
-                          input: {
-                            endAdornment: (
-                              <InputAdornment position="end">
-                                <Tooltip title="Символ для разбивки значения на части. Если не указан — используется символ столбца." placement="top">
-                                  <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', cursor: 'default' }} />
-                                </Tooltip>
-                              </InputAdornment>
-                            ),
-                          },
-                        }}
-                      />
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Checkbox
-                          size="small"
-                          checked={(zone.splitChar ?? '') === ' '}
-                          onChange={e => updateZone(zone.id, { splitChar: e.target.checked ? ' ' : '' })}
-                        />
-                        <Typography variant="caption">пробел</Typography>
-                      </Box>
-                    </Box>
-                    {effectiveChar && (
-                      <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
-                        <InputLabel shrink>Часть</InputLabel>
-                        <Select
-                          value={zone.splitIndex ?? ''}
-                          label="Часть"
-                          notched
-                          displayEmpty
-                          onChange={e => updateZone(zone.id, { splitIndex: e.target.value === '' ? null : Number(e.target.value) })}
-                        >
-                          <MenuItem value=""><em>— (не разбивать)</em></MenuItem>
-                          {options.map(({ index, label }) => (
-                            <MenuItem key={index} value={index}>{index}: "{label}"</MenuItem>
-                          ))}
-                          {zone.splitIndex != null && options.length === 0 && (
-                            <MenuItem value={zone.splitIndex}>часть {zone.splitIndex}</MenuItem>
-                          )}
-                        </Select>
-                      </FormControl>
-                    )}
-                  </>
-                )
-              })()}
+                  {zone.column && (() => {
+                    const effectiveChar = zone.splitChar || columnSplits[zone.column] || ''
+                    const options = effectiveChar ? getSplitOptions(zone) : []
+                    return (
+                      <>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }} onClick={e => e.stopPropagation()}>
+                          <TextField
+                            size="small"
+                            sx={{ flex: 1 }}
+                            label="Символ"
+                            value={zone.splitChar ?? ''}
+                            onChange={e => updateZone(zone.id, { splitChar: e.target.value })}
+                            disabled={(zone.splitChar ?? '') === ' '}
+                            placeholder="символ разделения"
+                            slotProps={{
+                              input: {
+                                endAdornment: (
+                                  <InputAdornment position="end">
+                                    <Tooltip title="Символ для разбивки значения на части. Если не указан — используется символ столбца." placement="top">
+                                      <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', cursor: 'default' }} />
+                                    </Tooltip>
+                                  </InputAdornment>
+                                ),
+                              },
+                            }}
+                          />
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Checkbox
+                              size="small"
+                              checked={(zone.splitChar ?? '') === ' '}
+                              onChange={e => updateZone(zone.id, { splitChar: e.target.checked ? ' ' : '' })}
+                            />
+                            <Typography variant="caption">пробел</Typography>
+                          </Box>
+                        </Box>
+                        {effectiveChar && (
+                          <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
+                            <InputLabel shrink>Часть</InputLabel>
+                            <Select
+                              value={zone.splitIndex ?? ''}
+                              label="Часть"
+                              notched
+                              displayEmpty
+                              onChange={e => updateZone(zone.id, { splitIndex: e.target.value === '' ? null : Number(e.target.value) })}
+                            >
+                              <MenuItem value=""><em>— (не разбивать)</em></MenuItem>
+                              {options.map(({ index, label }) => (
+                                <MenuItem key={index} value={index}>{index}: "{label}"</MenuItem>
+                              ))}
+                              {zone.splitIndex != null && options.length === 0 && (
+                                <MenuItem value={zone.splitIndex}>часть {zone.splitIndex}</MenuItem>
+                              )}
+                            </Select>
+                          </FormControl>
+                        )}
+                      </>
+                    )
+                  })()}
 
-              <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
-                <InputLabel>Шрифт</InputLabel>
-                <Select
-                  value={zone.font}
-                  label="Шрифт"
-                  onChange={e => updateZone(zone.id, { font: e.target.value })}
-                >
-                  {FONTS.map(f => (
-                    <MenuItem key={f.value} value={f.value}>{f.label}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+                  <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
+                    <InputLabel>Шрифт</InputLabel>
+                    <Select
+                      value={zone.font}
+                      label="Шрифт"
+                      onChange={e => updateZone(zone.id, { font: e.target.value })}
+                    >
+                      {FONTS.map(f => (
+                        <MenuItem key={f.value} value={f.value}>{f.label}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-              <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
-                <InputLabel shrink>Размер</InputLabel>
-                <Select
-                  value={zone.fontSize}
-                  label="Размер"
-                  notched
-                  onChange={e => updateZone(zone.id, { fontSize: e.target.value })}
-                >
-                  {FONT_SIZES.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-                </Select>
-              </FormControl>
+                  <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
+                    <InputLabel shrink>Размер</InputLabel>
+                    <Select
+                      value={zone.fontSize}
+                      label="Размер"
+                      notched
+                      onChange={e => updateZone(zone.id, { fontSize: e.target.value })}
+                    >
+                      {FONT_SIZES.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+                    </Select>
+                  </FormControl>
+                </Box>
+              </Collapse>
             </ListItem>
           </Box>
         ))}
