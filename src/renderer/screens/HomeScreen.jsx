@@ -28,7 +28,7 @@ export default function HomeScreen({ onOpenProject }) {
       window.api.loadPrefs(),
     ]).then(([projectList, loadedPrefs]) => {
       setProjects(projectList)
-      setPrefs(loadedPrefs)
+      setPrefs(prev => ({ ...prev, ...loadedPrefs }))
     })
   }, [])
 

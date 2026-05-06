@@ -6,16 +6,17 @@ import {
   DialogContentText, DialogActions,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
 
 export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, projects, onDeleteAll }) {
-  const { defaultFontSize } = prefs
-  const [fontSizeInput, setFontSizeInput] = useState(String(prefs.defaultFontSize ?? 12))
+  const { defaultFontSize = DEFAULT_FONT_SIZE, defaultFont = DEFAULT_FONT } = prefs
+  const [fontSizeInput, setFontSizeInput] = useState(String(defaultFontSize))
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmInput, setConfirmInput] = useState('')
 
   useEffect(() => {
     if (open) {
-      setFontSizeInput(String(defaultFontSize))
+      setFontSizeInput(String(defaultFontSize ?? DEFAULT_FONT_SIZE))
     } else {
       setConfirmInput('')
     }
@@ -53,7 +54,7 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
         <FormControl fullWidth size="small" sx={{ mb: 2 }}>
           <InputLabel>Шрифт по умолчанию</InputLabel>
           <Select
-            value={prefs.defaultFont}
+            value={defaultFont}
             label="Шрифт по умолчанию"
             onChange={e => onPrefsChange({ defaultFont: e.target.value })}
           >
