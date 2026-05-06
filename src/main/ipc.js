@@ -98,3 +98,12 @@ ipcMain.handle('projects:delete', (_, name) => {
     fs.rmSync(projectDir, { recursive: true })
   }
 })
+
+ipcMain.handle('projects:deleteAll', () => {
+  ensureProjectsDir()
+  const entries = fs.readdirSync(PROJECTS_DIR, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+  for (const entry of entries) {
+    fs.rmSync(path.join(PROJECTS_DIR, entry.name), { recursive: true })
+  }
+})
