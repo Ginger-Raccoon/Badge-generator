@@ -5,8 +5,9 @@ module.exports = {
   packagerConfig: {
     asar: true,
     extraResource: ['public/fonts'],
-    name: 'badge-generator',
-    productName: 'Badge Generator',
+    name: 'badjeek',
+    productName: 'Бейджик',
+    icon: './icon',
   },
   rebuildConfig: {},
   makers: [

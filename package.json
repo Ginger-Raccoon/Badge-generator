@@ -1,6 +1,6 @@
 {
-  "name": "badge-generator",
-  "productName": "Badge Generator",
+  "name": "badgeek",
+  "productName": "Бейджик",
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": ".vite/build/main.js",

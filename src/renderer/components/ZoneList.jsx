@@ -1,9 +1,10 @@
 import {
   Box, Typography, List, ListItem, ListItemText,
   Select, MenuItem, FormControl, InputLabel, IconButton,
-  Divider, TextField, Checkbox,
+  Divider, TextField, Checkbox, Tooltip, InputAdornment,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 
 const FONTS = [
   { value: 'Roboto', label: 'Roboto' },
@@ -48,12 +49,14 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
     <Box>
       {usedColumns.length > 0 && (
         <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
-            Разделители столбцов
-          </Typography>
-          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-            Символ для разбивки значения на части. Применяется ко всем зонам, привязанным к этому столбцу.
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
+            <Typography variant="caption" color="text.secondary">
+              Разделители столбцов
+            </Typography>
+            <Tooltip title="Символ для разбивки значения на части. Применяется ко всем зонам, привязанным к этому столбцу." placement="top">
+              <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', cursor: 'default' }} />
+            </Tooltip>
+          </Box>
           {usedColumns.map(col => (
             <Box key={col} sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
               <Typography variant="body2" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -115,27 +118,10 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
               </FormControl>
 
               {zone.column && (() => {
-                const options = getSplitOptions(zone)
+                const effectiveChar = zone.splitChar || columnSplits[zone.column] || ''
+                const options = effectiveChar ? getSplitOptions(zone) : []
                 return (
                   <>
-                    <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
-                      <InputLabel shrink>Часть</InputLabel>
-                      <Select
-                        value={zone.splitIndex ?? ''}
-                        label="Часть"
-                        notched
-                        displayEmpty
-                        onChange={e => updateZone(zone.id, { splitIndex: e.target.value === '' ? null : Number(e.target.value) })}
-                      >
-                        <MenuItem value=""><em>— (не разбивать)</em></MenuItem>
-                        {options.map(({ index, label }) => (
-                          <MenuItem key={index} value={index}>{index}: "{label}"</MenuItem>
-                        ))}
-                        {zone.splitIndex != null && options.length === 0 && (
-                          <MenuItem value={zone.splitIndex}>часть {zone.splitIndex}</MenuItem>
-                        )}
-                      </Select>
-                    </FormControl>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }} onClick={e => e.stopPropagation()}>
                       <TextField
                         size="small"
@@ -144,11 +130,18 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                         value={zone.splitChar ?? ''}
                         onChange={e => updateZone(zone.id, { splitChar: e.target.value })}
                         disabled={(zone.splitChar ?? '') === ' '}
-                        placeholder={
-                          columnSplits[zone.column]
-                            ? `пустым — символ столбца (${columnSplits[zone.column] === ' ' ? '␣' : columnSplits[zone.column]})`
-                            : 'пустым — разбивка не применяется'
-                        }
+                        placeholder="символ разделения"
+                        slotProps={{
+                          input: {
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <Tooltip title="Символ для разбивки значения на части. Если не указан — используется символ столбца." placement="top">
+                                  <InfoOutlinedIcon sx={{ fontSize: 14, color: 'text.disabled', cursor: 'default' }} />
+                                </Tooltip>
+                              </InputAdornment>
+                            ),
+                          },
+                        }}
                       />
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Checkbox
@@ -159,6 +152,26 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                         <Typography variant="caption">пробел</Typography>
                       </Box>
                     </Box>
+                    {effectiveChar && (
+                      <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
+                        <InputLabel shrink>Часть</InputLabel>
+                        <Select
+                          value={zone.splitIndex ?? ''}
+                          label="Часть"
+                          notched
+                          displayEmpty
+                          onChange={e => updateZone(zone.id, { splitIndex: e.target.value === '' ? null : Number(e.target.value) })}
+                        >
+                          <MenuItem value=""><em>— (не разбивать)</em></MenuItem>
+                          {options.map(({ index, label }) => (
+                            <MenuItem key={index} value={index}>{index}: "{label}"</MenuItem>
+                          ))}
+                          {zone.splitIndex != null && options.length === 0 && (
+                            <MenuItem value={zone.splitIndex}>часть {zone.splitIndex}</MenuItem>
+                          )}
+                        </Select>
+                      </FormControl>
+                    )}
                   </>
                 )
               })()}

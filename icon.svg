@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- App icon background -->
+  <rect width="512" height="512" rx="112" fill="#f0f0f0"/>
+
+  <!-- Badge card shadow -->
+  <rect x="56" y="122" width="400" height="278" rx="20" fill="rgba(0,0,0,0.10)" transform="translate(4,5)"/>
+
+  <!-- Badge card -->
+  <rect x="56" y="122" width="400" height="278" rx="20" fill="white"/>
+
+  <!-- Top color stripe -->
+  <rect x="56" y="122" width="400" height="42" rx="20" fill="rgb(208,16,5)"/>
+  <rect x="56" y="144" width="400" height="20" fill="rgb(208,16,5)"/>
+
+  <!-- Lanyard hole -->
+  <circle cx="256" cy="122" r="15" fill="#f0f0f0"/>
+  <circle cx="256" cy="122" r="9"  fill="#d8d8d8"/>
+
+  <!-- Photo placeholder background -->
+  <rect x="82" y="180" width="114" height="142" rx="10" fill="#e2e2e2"/>
+
+  <!-- Person head -->
+  <circle cx="139" cy="223" r="28" fill="#bdbdbd"/>
+
+  <!-- Person body (shoulders) -->
+  <path d="M82,322 Q82,290 139,282 Q196,290 196,322 Z" fill="#bdbdbd"/>
+
+  <!-- Red cross — vertical bar -->
+  <rect x="308" y="183" width="36" height="110" rx="9" fill="rgb(208,16,5)"/>
+  <!-- Red cross — horizontal bar -->
+  <rect x="271" y="220" width="110" height="36" rx="9" fill="rgb(208,16,5)"/>
+
+  <!-- Text lines (name / info) -->
+  <rect x="226" y="312" width="148" height="11" rx="5.5" fill="#d0d0d0"/>
+  <rect x="226" y="332" width="116" height="9"  rx="4.5" fill="#e0e0e0"/>
+  <rect x="226" y="350" width="88"  height="9"  rx="4.5" fill="#e0e0e0"/>
+</svg>
