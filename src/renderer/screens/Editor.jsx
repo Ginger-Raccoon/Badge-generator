@@ -11,6 +11,7 @@ import ZoneList from '../components/ZoneList'
 import { readExcel } from '../utils/excel'
 import { generatePdf } from '../utils/generator'
 import { parsePsd } from '../utils/psd'
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
 
 export default function Editor({ project, onProjectUpdate, onBack }) {
   const [selectedZoneId, setSelectedZoneId] = useState(null)
@@ -23,8 +24,8 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
   const [rows, setRows] = useState([])
   const [previewRowIndex, setPreviewRowIndex] = useState(0)
   const [pageInput, setPageInput] = useState('1')
-  const [defaultFont, setDefaultFont] = useState('Roboto')
-  const [defaultFontSize, setDefaultFontSize] = useState(12)
+  const [defaultFont, setDefaultFont] = useState(DEFAULT_FONT)
+  const [defaultFontSize, setDefaultFontSize] = useState(DEFAULT_FONT_SIZE)
   const [sideWidth, setSideWidth] = useState(300)
   const dragging = useRef(false)
 
@@ -68,8 +69,8 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         setSnackbar({ message: `Файлы не найдены: ${missing.join(', ')}. Загрузите их заново.`, severity: 'warning' })
       }
       const loadedPrefs = await window.api.loadPrefs()
-      setDefaultFont(loadedPrefs.defaultFont ?? 'Roboto')
-      setDefaultFontSize(loadedPrefs.defaultFontSize ?? 12)
+      setDefaultFont(loadedPrefs.defaultFont ?? DEFAULT_FONT)
+      setDefaultFontSize(loadedPrefs.defaultFontSize ?? DEFAULT_FONT_SIZE)
     }
     init()
   }, [])

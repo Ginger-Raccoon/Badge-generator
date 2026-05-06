@@ -42,8 +42,9 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
         anchor="right"
         open={open}
         onClose={onClose}
-        PaperProps={{ sx: { width: 320, p: 2 } }}
+        PaperProps={{ sx: { width: 320 } }}
       >
+        <Box sx={{ px: '32px', py: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" sx={{ flex: 1 }}>Настройки</Typography>
           <IconButton onClick={onClose}><CloseIcon /></IconButton>
@@ -97,6 +98,7 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
         >
           Удалить все проекты
         </Button>
+        </Box>
       </Drawer>
 
       <Dialog

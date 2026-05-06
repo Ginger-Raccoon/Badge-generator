@@ -11,12 +11,13 @@ import StarBorderIcon from '@mui/icons-material/StarBorder'
 import DeleteIcon from '@mui/icons-material/Delete'
 import SettingsIcon from '@mui/icons-material/Settings'
 import SettingsDrawer from '../components/SettingsDrawer'
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
 
 export default function HomeScreen({ onOpenProject }) {
   const [projects, setProjects] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newName, setNewName] = useState('')
-  const [prefs, setPrefs] = useState({ favorites: [], skipDeleteConfirm: false, defaultFont: 'Roboto', defaultFontSize: 12 })
+  const [prefs, setPrefs] = useState({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE })
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleteConfirmChecked, setDeleteConfirmChecked] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
