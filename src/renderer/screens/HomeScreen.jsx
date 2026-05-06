@@ -92,10 +92,8 @@ export default function HomeScreen({ onOpenProject }) {
 
   async function handleDeleteAll() {
     await window.api.deleteAllProjects()
-    const next = { ...prefs, favorites: [] }
+    await handlePrefsChange({ favorites: [] })
     setProjects([])
-    setPrefs(next)
-    await window.api.savePrefs(next)
     setSettingsOpen(false)
   }
 
