@@ -9,26 +9,33 @@ import AddIcon from '@mui/icons-material/Add'
 import StarIcon from '@mui/icons-material/Star'
 import StarBorderIcon from '@mui/icons-material/StarBorder'
 import DeleteIcon from '@mui/icons-material/Delete'
+import SettingsIcon from '@mui/icons-material/Settings'
+import SettingsDrawer from '../components/SettingsDrawer'
 
 export default function HomeScreen({ onOpenProject }) {
   const [projects, setProjects] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newName, setNewName] = useState('')
-  const [favorites, setFavorites] = useState([])
-  const [skipDeleteConfirm, setSkipDeleteConfirm] = useState(false)
+  const [prefs, setPrefs] = useState({ favorites: [], skipDeleteConfirm: false, defaultFont: 'Roboto', defaultFontSize: 12 })
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleteConfirmChecked, setDeleteConfirmChecked] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   useEffect(() => {
     Promise.all([
       window.api.listProjects(),
       window.api.loadPrefs(),
-    ]).then(([projectList, prefs]) => {
+    ]).then(([projectList, loadedPrefs]) => {
       setProjects(projectList)
-      setFavorites(prefs.favorites)
-      setSkipDeleteConfirm(prefs.skipDeleteConfirm)
+      setPrefs(loadedPrefs)
     })
   }, [])
+
+  async function handlePrefsChange(patch) {
+    const next = { ...prefs, ...patch }
+    setPrefs(next)
+    await window.api.savePrefs(next)
+  }
 
   async function handleCreate() {
     const name = newName.trim()
@@ -46,24 +53,22 @@ export default function HomeScreen({ onOpenProject }) {
 
   async function toggleFavorite(e, name) {
     e.stopPropagation()
-    const next = favorites.includes(name)
-      ? favorites.filter(f => f !== name)
-      : [...favorites, name]
-    setFavorites(next)
-    await window.api.savePrefs({ favorites: next, skipDeleteConfirm })
+    const next = prefs.favorites.includes(name)
+      ? prefs.favorites.filter(f => f !== name)
+      : [...prefs.favorites, name]
+    await handlePrefsChange({ favorites: next })
   }
 
   async function confirmDelete(name) {
-    const nextFavorites = favorites.filter(f => f !== name)
-    await window.api.savePrefs({ favorites: nextFavorites, skipDeleteConfirm })
+    const nextFavorites = prefs.favorites.filter(f => f !== name)
+    await handlePrefsChange({ favorites: nextFavorites })
     await window.api.deleteProject(name)
-    setFavorites(nextFavorites)
     setProjects(prev => prev.filter(p => p !== name))
   }
 
   async function handleDeleteClick(e, name) {
     e.stopPropagation()
-    if (skipDeleteConfirm) {
+    if (prefs.skipDeleteConfirm) {
       await confirmDelete(name)
     } else {
       setDeleteConfirmChecked(false)
@@ -73,14 +78,10 @@ export default function HomeScreen({ onOpenProject }) {
 
   async function handleConfirmDelete() {
     try {
-      const nextFavorites = favorites.filter(f => f !== pendingDelete)
-      await window.api.savePrefs({
-        favorites: nextFavorites,
-        skipDeleteConfirm: deleteConfirmChecked || skipDeleteConfirm,
-      })
-      if (deleteConfirmChecked) setSkipDeleteConfirm(true)
+      const nextFavorites = prefs.favorites.filter(f => f !== pendingDelete)
+      const nextSkip = deleteConfirmChecked || prefs.skipDeleteConfirm
+      await handlePrefsChange({ favorites: nextFavorites, skipDeleteConfirm: nextSkip })
       await window.api.deleteProject(pendingDelete)
-      setFavorites(nextFavorites)
       setProjects(prev => prev.filter(p => p !== pendingDelete))
       setPendingDelete(null)
     } catch (err) {
@@ -89,8 +90,17 @@ export default function HomeScreen({ onOpenProject }) {
     }
   }
 
+  async function handleDeleteAll() {
+    await window.api.deleteAllProjects()
+    const next = { ...prefs, favorites: [] }
+    setProjects([])
+    setPrefs(next)
+    await window.api.savePrefs(next)
+    setSettingsOpen(false)
+  }
+
   function renderItem(name) {
-    const isFav = favorites.includes(name)
+    const isFav = prefs.favorites.includes(name)
     return (
       <ListItem key={name} disablePadding sx={{ border: 1, borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
         <ListItemButton onClick={() => handleOpen(name)}>
@@ -106,8 +116,8 @@ export default function HomeScreen({ onOpenProject }) {
     )
   }
 
-  const favList = projects.filter(n => favorites.includes(n))
-  const otherList = projects.filter(n => !favorites.includes(n))
+  const favList = projects.filter(n => prefs.favorites.includes(n))
+  const otherList = projects.filter(n => !prefs.favorites.includes(n))
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -145,6 +155,13 @@ export default function HomeScreen({ onOpenProject }) {
           </List>
         </>
       </Box>
+
+      <IconButton
+        onClick={() => setSettingsOpen(true)}
+        sx={{ position: 'fixed', bottom: 16, right: 16, bgcolor: 'background.paper', boxShadow: 2, '&:hover': { bgcolor: 'background.paper' } }}
+      >
+        <SettingsIcon />
+      </IconButton>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
         <DialogTitle>Новый проект</DialogTitle>
@@ -188,6 +205,15 @@ export default function HomeScreen({ onOpenProject }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <SettingsDrawer
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        prefs={prefs}
+        onPrefsChange={handlePrefsChange}
+        projects={projects}
+        onDeleteAll={handleDeleteAll}
+      />
     </Box>
   )
 }
