@@ -14,7 +14,11 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
   const [confirmInput, setConfirmInput] = useState('')
 
   useEffect(() => {
-    if (open) setFontSizeInput(String(defaultFontSize))
+    if (open) {
+      setFontSizeInput(String(defaultFontSize))
+    } else {
+      setConfirmInput('')
+    }
   }, [open, defaultFontSize])
 
   function handleFontSizeBlur() {

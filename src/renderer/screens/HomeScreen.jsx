@@ -31,10 +31,12 @@ export default function HomeScreen({ onOpenProject }) {
     })
   }, [])
 
-  async function handlePrefsChange(patch) {
-    const next = { ...prefs, ...patch }
-    setPrefs(next)
-    await window.api.savePrefs(next)
+  function handlePrefsChange(patch) {
+    setPrefs(current => {
+      const next = { ...current, ...patch }
+      window.api.savePrefs(next)
+      return next
+    })
   }
 
   async function handleCreate() {
@@ -56,12 +58,12 @@ export default function HomeScreen({ onOpenProject }) {
     const next = prefs.favorites.includes(name)
       ? prefs.favorites.filter(f => f !== name)
       : [...prefs.favorites, name]
-    await handlePrefsChange({ favorites: next })
+    handlePrefsChange({ favorites: next })
   }
 
   async function confirmDelete(name) {
     const nextFavorites = prefs.favorites.filter(f => f !== name)
-    await handlePrefsChange({ favorites: nextFavorites })
+    handlePrefsChange({ favorites: nextFavorites })
     await window.api.deleteProject(name)
     setProjects(prev => prev.filter(p => p !== name))
   }
@@ -80,7 +82,7 @@ export default function HomeScreen({ onOpenProject }) {
     try {
       const nextFavorites = prefs.favorites.filter(f => f !== pendingDelete)
       const nextSkip = deleteConfirmChecked || prefs.skipDeleteConfirm
-      await handlePrefsChange({ favorites: nextFavorites, skipDeleteConfirm: nextSkip })
+      handlePrefsChange({ favorites: nextFavorites, skipDeleteConfirm: nextSkip })
       await window.api.deleteProject(pendingDelete)
       setProjects(prev => prev.filter(p => p !== pendingDelete))
       setPendingDelete(null)
@@ -91,10 +93,14 @@ export default function HomeScreen({ onOpenProject }) {
   }
 
   async function handleDeleteAll() {
-    await window.api.deleteAllProjects()
-    await handlePrefsChange({ favorites: [] })
-    setProjects([])
-    setSettingsOpen(false)
+    try {
+      await window.api.deleteAllProjects()
+      handlePrefsChange({ favorites: [] })
+      setProjects([])
+      setSettingsOpen(false)
+    } catch (err) {
+      console.error('Ошибка при удалении всех проектов:', err)
+    }
   }
 
   function renderItem(name) {
