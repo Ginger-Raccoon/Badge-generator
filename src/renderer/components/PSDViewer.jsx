@@ -5,7 +5,7 @@ import ZoneRect from './ZoneRect'
 import { canvasToDoc, docToCanvas } from '../utils/coordinates'
 import { wrapText, splitValue } from '../utils/textLayout'
 
-export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneId, onSelectZone, onPsdParsed, previewRow, dpi, columnSplits = {} }) {
+export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneId, onSelectZone, onPsdParsed, previewRow, dpi, columnSplits = {}, defaultFont = 'Roboto', defaultFontSize = 12 }) {
   const canvasRef = useRef(null)
   const svgRef = useRef(null)
   const [sizes, setSizes] = useState(null)
@@ -13,6 +13,7 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
   const fontsRef = useRef({})
   const measureCanvasRef = useRef(document.createElement('canvas'))
   const [fontsReady, setFontsReady] = useState(false)
+  const minDocWidthsRef = useRef({})
 
   useEffect(() => {
     if (!psdPath) return
@@ -56,7 +57,7 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
         ['PTSerif', fontBytes.ptSerif, 'PTSerif-preview'],
       ]
       for (const [name, bytes, family] of entries) {
-        const face = new FontFace(family, bytes)
+        const face = new FontFace(family, new Uint8Array(bytes))
         await face.load()
         if (cancelled) return
         document.fonts.add(face)
@@ -67,6 +68,20 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
     loadFonts()
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    if (!fontsReady || !previewRow || !sizes) return
+    let changed = false
+    const updated = zones.map(zone => {
+      const minCanvasW = getZoneMinCanvasWidth(zone)
+      if (minCanvasW === 0) return zone
+      const minDocW = minCanvasW * (sizes.psd.width / sizes.canvas.width)
+      if (zone.width >= minDocW - 0.5) return zone
+      changed = true
+      return { ...zone, width: minDocW }
+    })
+    if (changed) onZonesChange(updated)
+  }, [zones, previewRow, fontsReady, sizes, dpi, columnSplits]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function getSvgPos(e) {
     const rect = svgRef.current.getBoundingClientRect()
@@ -79,6 +94,20 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
     return ctx.measureText(text).width
   }
 
+  function getZoneMinCanvasWidth(zone) {
+    if (!fontsReady || !previewRow || !zone.column || !dpi || !sizes) return 0
+    const rawValue = previewRow[zone.column]
+    if (rawValue == null || rawValue === '') return 0
+    const value = splitValue(rawValue, zone.splitIndex ?? null, zone.splitChar ?? '', columnSplits[zone.column] ?? '')
+    if (!value) return 0
+    const fontFamily = fontsRef.current[zone.font] ?? fontsRef.current['Roboto']
+    if (!fontFamily) return 0
+    const displayScale = sizes.canvas.width / sizes.psd.width
+    const svgFontSize = zone.fontSize * (dpi / 72) * displayScale
+    const words = String(value).split(' ')
+    return Math.max(...words.map(w => measureText(w, svgFontSize, fontFamily))) + 4
+  }
+
   function getPreviewLines(zone, coords) {
     if (!fontsReady || !previewRow || !zone.column || !dpi || !sizes) return null
     const rawValue = previewRow[zone.column]
@@ -89,19 +118,20 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
     if (!fontFamily) return null
     const displayScale = sizes.canvas.width / sizes.psd.width
     const svgFontSize = zone.fontSize * (dpi / 72) * displayScale
-    const lines = wrapText(String(value), coords.canvasWidth, svgFontSize, (str, size) => measureText(str, size, fontFamily))
+    const lines = wrapText(String(value), coords.canvasWidth - 4, svgFontSize, (str, size) => measureText(str, size, fontFamily))
     const lineHeight = svgFontSize * 1.2
     const totalHeight = (lines.length - 1) * lineHeight + svgFontSize
     const startY = coords.canvasY + (coords.canvasHeight - totalHeight) / 2 + svgFontSize
     return { fontFamily, fontSize: svgFontSize, lines, lineHeight, startY }
   }
 
-  function computeLiveZone(zone, inter) {
+  function computeLiveZone(zone, inter, minDocWidth = 0) {
     if (!inter || !sizes) return null
     const scaleX = sizes.psd.width / sizes.canvas.width
     const scaleY = sizes.psd.height / sizes.canvas.height
     const dx = (inter.currentX - inter.startX) * scaleX
     const dy = (inter.currentY - inter.startY) * scaleY
+    const minW = Math.max(5, minDocWidth)
 
     if (inter.type === 'moving' && inter.zoneId === zone.id) {
       return {
@@ -117,13 +147,13 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
       if (inter.corner === 'tl') {
         const right = o.x + o.width
         const bottom = o.y + o.height
-        x = Math.max(0, Math.min(right - 5, o.x + dx))
+        x = Math.max(0, Math.min(right - minW, o.x + dx))
         y = Math.max(0, Math.min(bottom - 5, o.y + dy))
         width = right - x
         height = bottom - y
       } else if (inter.corner === 'tr') {
         const bottom = o.y + o.height
-        const right = Math.min(sizes.psd.width, Math.max(o.x + 5, o.x + o.width + dx))
+        const right = Math.min(sizes.psd.width, Math.max(o.x + minW, o.x + o.width + dx))
         x = o.x
         y = Math.max(0, Math.min(bottom - 5, o.y + dy))
         width = right - x
@@ -131,13 +161,13 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
       } else if (inter.corner === 'bl') {
         const right = o.x + o.width
         const bottom = Math.min(sizes.psd.height, Math.max(o.y + 5, o.y + o.height + dy))
-        x = Math.max(0, Math.min(right - 5, o.x + dx))
+        x = Math.max(0, Math.min(right - minW, o.x + dx))
         y = o.y
         width = right - x
         height = bottom - y
       } else {
         // br
-        const right = Math.min(sizes.psd.width, Math.max(o.x + 5, o.x + o.width + dx))
+        const right = Math.min(sizes.psd.width, Math.max(o.x + minW, o.x + o.width + dx))
         const bottom = Math.min(sizes.psd.height, Math.max(o.y + 5, o.y + o.height + dy))
         x = o.x
         y = o.y
@@ -194,15 +224,16 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
         label: `Зона ${zones.length + 1}`,
         ...docCoords,
         column: '',
-        font: 'Roboto',
-        fontSize: 12,
+        font: defaultFont,
+        fontSize: defaultFontSize,
         splitIndex: null,
         splitChar: '',
       }])
     } else {
       const zone = zones.find(z => z.id === interaction.zoneId)
       const moved = interaction.currentX !== interaction.startX || interaction.currentY !== interaction.startY
-      const live = computeLiveZone(zone, interaction)
+      const minDocW = minDocWidthsRef.current[zone?.id] ?? 0
+      const live = computeLiveZone(zone, interaction, minDocW)
       setInteraction(null)
       if (!zone || !moved || !live) return
       onZonesChange(zones.map(z => z.id === zone.id ? { ...z, ...live } : z))
@@ -245,8 +276,12 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
           onMouseLeave={handleMouseUp}
         >
           {zones.map(zone => {
+            const minCanvasW = getZoneMinCanvasWidth(zone)
+            const minDocW = sizes ? minCanvasW * (sizes.psd.width / sizes.canvas.width) : 0
+            minDocWidthsRef.current[zone.id] = minDocW
+
             const liveZone = (interaction && interaction.zoneId === zone.id)
-              ? { ...zone, ...computeLiveZone(zone, interaction) }
+              ? { ...zone, ...computeLiveZone(zone, interaction, minDocW) }
               : zone
             const coords = toCanvasCoords(liveZone)
             if (!coords) return null

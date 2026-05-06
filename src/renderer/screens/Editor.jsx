@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Box, AppBar, Toolbar, Typography, Button,
-  IconButton, Divider, Snackbar, Alert, TextField,
+  IconButton, Snackbar, Alert, TextField,
 } from '@mui/material'
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
@@ -22,9 +22,31 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
   const [parsedPsd, setParsedPsd] = useState(null)
   const [rows, setRows] = useState([])
   const [previewRowIndex, setPreviewRowIndex] = useState(0)
+  const [pageInput, setPageInput] = useState('1')
+  const [defaultFont, setDefaultFont] = useState('Roboto')
+  const [defaultFontSize, setDefaultFontSize] = useState(12)
+  const [sideWidth, setSideWidth] = useState(300)
+  const dragging = useRef(false)
+
+  const handleDividerMouseDown = useCallback(e => {
+    e.preventDefault()
+    dragging.current = true
+    const onMove = mv => {
+      if (!dragging.current) return
+      const newWidth = window.innerWidth - mv.clientX
+      setSideWidth(Math.max(200, Math.min(600, newWidth)))
+    }
+    const onUp = () => {
+      dragging.current = false
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }, [])
 
   useEffect(() => {
-    async function checkFiles() {
+    async function init() {
       const missing = []
       if (project.templatePsdPath) {
         const exists = await window.api.fileExists(project.templatePsdPath)
@@ -32,13 +54,24 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       }
       if (project.excelPath) {
         const exists = await window.api.fileExists(project.excelPath)
-        if (!exists) missing.push('Excel-файл')
+        if (!exists) {
+          missing.push('Excel-файл')
+        } else {
+          try {
+            const bytes = await window.api.readFileBytes(project.excelPath)
+            const { rows: loadedRows } = readExcel(new Uint8Array(bytes))
+            setRows(loadedRows)
+          } catch {}
+        }
       }
       if (missing.length > 0) {
         setSnackbar({ message: `Файлы не найдены: ${missing.join(', ')}. Загрузите их заново.`, severity: 'warning' })
       }
+      const loadedPrefs = await window.api.loadPrefs()
+      setDefaultFont(loadedPrefs.defaultFont ?? 'Roboto')
+      setDefaultFontSize(loadedPrefs.defaultFontSize ?? 12)
     }
-    checkFiles()
+    init()
   }, [])
 
   async function save(updated) {
@@ -212,21 +245,34 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#e0e0e0' }}>
           {rows.length > 0 && (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 0.5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-              <IconButton size="small" disabled={previewRowIndex === 0} onClick={() => setPreviewRowIndex(i => i - 1)}>
+              <IconButton size="small" disabled={previewRowIndex === 0} onClick={() => {
+                const next = previewRowIndex - 1
+                setPreviewRowIndex(next)
+                setPageInput(String(next + 1))
+              }}>
                 <ChevronLeftIcon fontSize="small" />
               </IconButton>
               <TextField
                 size="small"
-                value={previewRowIndex + 1}
+                value={pageInput}
                 onChange={e => {
+                  setPageInput(e.target.value)
                   const v = parseInt(e.target.value, 10)
                   if (!isNaN(v)) setPreviewRowIndex(Math.max(0, Math.min(rows.length - 1, v - 1)))
+                }}
+                onBlur={() => {
+                  const v = parseInt(pageInput, 10)
+                  if (isNaN(v) || pageInput.trim() === '') setPageInput(String(previewRowIndex + 1))
                 }}
                 inputProps={{ min: 1, max: rows.length, style: { textAlign: 'center', width: 40 } }}
                 sx={{ width: 60 }}
               />
               <Typography variant="body2" color="text.secondary">/ {rows.length}</Typography>
-              <IconButton size="small" disabled={previewRowIndex === rows.length - 1} onClick={() => setPreviewRowIndex(i => i + 1)}>
+              <IconButton size="small" disabled={previewRowIndex === rows.length - 1} onClick={() => {
+                const next = previewRowIndex + 1
+                setPreviewRowIndex(next)
+                setPageInput(String(next + 1))
+              }}>
                 <ChevronRightIcon fontSize="small" />
               </IconButton>
             </Box>
@@ -242,11 +288,16 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
               previewRow={previewRow}
               dpi={dpi}
               columnSplits={project.columnSplits ?? {}}
+              defaultFont={defaultFont}
+              defaultFontSize={defaultFontSize}
             />
           </Box>
         </Box>
-        <Divider orientation="vertical" flexItem />
-        <Box sx={{ width: 300, overflow: 'auto' }}>
+        <Box
+          onMouseDown={handleDividerMouseDown}
+          sx={{ width: 4, cursor: 'col-resize', flexShrink: 0, bgcolor: 'divider', '&:hover': { bgcolor: 'primary.main' }, transition: 'background-color 0.15s' }}
+        />
+        <Box sx={{ width: sideWidth, flexShrink: 0, overflow: 'auto' }}>
           <ZoneList
             zones={project.zones}
             columns={project.columns}
