@@ -256,7 +256,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
 
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#e0e0e0' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', py: 0.5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', py: 1, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
             <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
               {rows.length > 0 && (
                 <>
@@ -317,7 +317,9 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
           onMouseDown={handleDividerMouseDown}
           sx={{ width: 4, cursor: 'col-resize', flexShrink: 0, bgcolor: 'divider', '&:hover': { bgcolor: 'primary.main' }, transition: 'background-color 0.15s' }}
         />
-        <Box sx={{ width: sideWidth, flexShrink: 0, overflow: 'auto' }}>
+        <Box sx={{ width: sideWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Box sx={{ py: 1, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }} />
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
           <ZoneList
             zones={project.zones}
             columns={project.columns}
@@ -328,6 +330,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
             onColumnSplitsChange={splits => save({ ...project, columnSplits: splits })}
             previewRow={previewRow}
           />
+          </Box>
         </Box>
       </Box>
 
