@@ -6,11 +6,14 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
+import SettingsIcon from '@mui/icons-material/Settings'
 import PSDViewer from '../components/PSDViewer'
 import ZoneList from '../components/ZoneList'
 import { readExcel } from '../utils/excel'
 import { generatePdf } from '../utils/generator'
 import { parsePsd } from '../utils/psd'
+import ProjectSettingsDrawer from '../components/ProjectSettingsDrawer'
+import { applyProjectSettings } from '../utils/zones'
 import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
 
 export default function Editor({ project, onProjectUpdate, onBack }) {
@@ -24,8 +27,8 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
   const [rows, setRows] = useState([])
   const [previewRowIndex, setPreviewRowIndex] = useState(0)
   const [pageInput, setPageInput] = useState('1')
-  const [defaultFont, setDefaultFont] = useState(DEFAULT_FONT)
-  const [defaultFontSize, setDefaultFontSize] = useState(DEFAULT_FONT_SIZE)
+  const [prefs, setPrefs] = useState({ defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE })
+  const [projectSettingsOpen, setProjectSettingsOpen] = useState(false)
   const [sideWidth, setSideWidth] = useState(300)
   const dragging = useRef(false)
 
@@ -69,8 +72,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         setSnackbar({ message: `Файлы не найдены: ${missing.join(', ')}. Загрузите их заново.`, severity: 'warning' })
       }
       const loadedPrefs = await window.api.loadPrefs()
-      setDefaultFont(loadedPrefs.defaultFont ?? DEFAULT_FONT)
-      setDefaultFontSize(loadedPrefs.defaultFontSize ?? DEFAULT_FONT_SIZE)
+      setPrefs(loadedPrefs)
     }
     init()
   }, [])
@@ -128,6 +130,13 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     await save({ ...project, zones })
   }
 
+  async function handleProjectSettingsChange(patch) {
+    const effectiveOldFont = project.projectFont ?? prefs.defaultFont ?? DEFAULT_FONT
+    const effectiveOldFontSize = project.projectFontSize ?? prefs.defaultFontSize ?? DEFAULT_FONT_SIZE
+    const updatedZones = applyProjectSettings(project.zones, patch, effectiveOldFont, effectiveOldFontSize)
+    await save({ ...project, ...patch, zones: updatedZones })
+  }
+
   async function handleGenerate() {
     if (generating) return
     setGenerating(true)
@@ -180,6 +189,9 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
 
   const previewRow = rows[previewRowIndex] ?? null
   const dpi = project.templateDpi ?? parsedPsd?.resolution ?? null
+
+  const effectiveDefaultFont = project.projectFont ?? prefs.defaultFont ?? DEFAULT_FONT
+  const effectiveDefaultFontSize = project.projectFontSize ?? prefs.defaultFontSize ?? DEFAULT_FONT_SIZE
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -244,40 +256,47 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
 
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', bgcolor: '#e0e0e0' }}>
-          {rows.length > 0 && (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, py: 0.5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
-              <IconButton size="small" disabled={previewRowIndex === 0} onClick={() => {
-                const next = previewRowIndex - 1
-                setPreviewRowIndex(next)
-                setPageInput(String(next + 1))
-              }}>
-                <ChevronLeftIcon fontSize="small" />
-              </IconButton>
-              <TextField
-                size="small"
-                value={pageInput}
-                onChange={e => {
-                  setPageInput(e.target.value)
-                  const v = parseInt(e.target.value, 10)
-                  if (!isNaN(v)) setPreviewRowIndex(Math.max(0, Math.min(rows.length - 1, v - 1)))
-                }}
-                onBlur={() => {
-                  const v = parseInt(pageInput, 10)
-                  if (isNaN(v) || pageInput.trim() === '') setPageInput(String(previewRowIndex + 1))
-                }}
-                inputProps={{ min: 1, max: rows.length, style: { textAlign: 'center', width: 40 } }}
-                sx={{ width: 60 }}
-              />
-              <Typography variant="body2" color="text.secondary">/ {rows.length}</Typography>
-              <IconButton size="small" disabled={previewRowIndex === rows.length - 1} onClick={() => {
-                const next = previewRowIndex + 1
-                setPreviewRowIndex(next)
-                setPageInput(String(next + 1))
-              }}>
-                <ChevronRightIcon fontSize="small" />
-              </IconButton>
+          <Box sx={{ display: 'flex', alignItems: 'center', py: 0.5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }}>
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+              {rows.length > 0 && (
+                <>
+                  <IconButton size="small" disabled={previewRowIndex === 0} onClick={() => {
+                    const next = previewRowIndex - 1
+                    setPreviewRowIndex(next)
+                    setPageInput(String(next + 1))
+                  }}>
+                    <ChevronLeftIcon fontSize="small" />
+                  </IconButton>
+                  <TextField
+                    size="small"
+                    value={pageInput}
+                    onChange={e => {
+                      setPageInput(e.target.value)
+                      const v = parseInt(e.target.value, 10)
+                      if (!isNaN(v)) setPreviewRowIndex(Math.max(0, Math.min(rows.length - 1, v - 1)))
+                    }}
+                    onBlur={() => {
+                      const v = parseInt(pageInput, 10)
+                      if (isNaN(v) || pageInput.trim() === '') setPageInput(String(previewRowIndex + 1))
+                    }}
+                    inputProps={{ min: 1, max: rows.length, style: { textAlign: 'center', width: 40 } }}
+                    sx={{ width: 60 }}
+                  />
+                  <Typography variant="body2" color="text.secondary">/ {rows.length}</Typography>
+                  <IconButton size="small" disabled={previewRowIndex === rows.length - 1} onClick={() => {
+                    const next = previewRowIndex + 1
+                    setPreviewRowIndex(next)
+                    setPageInput(String(next + 1))
+                  }}>
+                    <ChevronRightIcon fontSize="small" />
+                  </IconButton>
+                </>
+              )}
             </Box>
-          )}
+            <IconButton size="small" onClick={() => setProjectSettingsOpen(true)} sx={{ mr: 0.5 }}>
+              <SettingsIcon fontSize="small" />
+            </IconButton>
+          </Box>
           <Box sx={{ flex: 1, overflow: 'auto', display: 'flex', justifyContent: 'center', p: 2 }}>
             <PSDViewer
               psdPath={project.templatePsdPath}
@@ -289,8 +308,8 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
               previewRow={previewRow}
               dpi={dpi}
               columnSplits={project.columnSplits ?? {}}
-              defaultFont={defaultFont}
-              defaultFontSize={defaultFontSize}
+              defaultFont={effectiveDefaultFont}
+              defaultFontSize={effectiveDefaultFontSize}
             />
           </Box>
         </Box>
@@ -315,6 +334,13 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       <Snackbar open={!!snackbar} autoHideDuration={3000} onClose={() => setSnackbar(null)}>
         <Alert severity={snackbar?.severity ?? 'success'} onClose={() => setSnackbar(null)}>{snackbar?.message}</Alert>
       </Snackbar>
+      <ProjectSettingsDrawer
+        open={projectSettingsOpen}
+        onClose={() => setProjectSettingsOpen(false)}
+        project={project}
+        prefs={prefs}
+        onProjectSettingsChange={handleProjectSettingsChange}
+      />
     </Box>
   )
 }
