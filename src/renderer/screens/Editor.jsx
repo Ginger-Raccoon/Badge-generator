@@ -315,7 +315,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         </Box>
         <Box
           onMouseDown={handleDividerMouseDown}
-          sx={{ width: 4, cursor: 'col-resize', flexShrink: 0, bgcolor: 'divider', '&:hover': { bgcolor: 'primary.main' }, transition: 'background-color 0.15s' }}
+          sx={{ width: 4, cursor: 'col-resize', flexShrink: 0, bgcolor: 'background.paper', '&:hover': { bgcolor: 'primary.main' }, transition: 'background-color 0.15s' }}
         />
         <Box sx={{ width: sideWidth, flexShrink: 0, overflow: 'auto' }}>
           <ZoneList
