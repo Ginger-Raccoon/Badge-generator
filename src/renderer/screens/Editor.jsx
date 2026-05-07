@@ -195,7 +195,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <AppBar position="static" elevation={1} color="default">
+      <AppBar position="static" elevation={1} color="default" sx={{ position: 'relative', zIndex: 1 }}>
         <Toolbar variant="dense">
           <IconButton edge="start" onClick={onBack} sx={{ mr: 1 }}>
             <ArrowBackIcon />
