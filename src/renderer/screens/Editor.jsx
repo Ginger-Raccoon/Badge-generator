@@ -317,9 +317,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
           onMouseDown={handleDividerMouseDown}
           sx={{ width: 4, cursor: 'col-resize', flexShrink: 0, bgcolor: 'divider', '&:hover': { bgcolor: 'primary.main' }, transition: 'background-color 0.15s' }}
         />
-        <Box sx={{ width: sideWidth, flexShrink: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <Box sx={{ py: 1, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider', flexShrink: 0 }} />
-          <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <Box sx={{ width: sideWidth, flexShrink: 0, overflow: 'auto' }}>
           <ZoneList
             zones={project.zones}
             columns={project.columns}
@@ -330,7 +328,6 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
             onColumnSplitsChange={splits => save({ ...project, columnSplits: splits })}
             previewRow={previewRow}
           />
-          </Box>
         </Box>
       </Box>
 
