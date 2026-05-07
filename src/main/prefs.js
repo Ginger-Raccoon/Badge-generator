@@ -3,7 +3,7 @@ import path from 'path'
 
 import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../shared/defaults.js'
 
-const DEFAULTS = { favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE }
+const DEFAULTS = { favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE, customFonts: [] }
 
 export function loadPrefs(dir) {
   const file = path.join(dir, 'prefs.json')

@@ -12,7 +12,7 @@ afterEach(() => rmSync(TMP, { recursive: true, force: true }))
 describe('loadPrefs', () => {
   test('возвращает дефолты если файл отсутствует', () => {
     const prefs = loadPrefs(TMP)
-    expect(prefs).toEqual({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE })
+    expect(prefs).toEqual({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE, customFonts: [] })
   })
 
   test('читает сохранённые данные', () => {
@@ -25,7 +25,7 @@ describe('loadPrefs', () => {
   test('возвращает дефолты при битом JSON', () => {
     writeFileSync(join(TMP, 'prefs.json'), 'не json')
     const prefs = loadPrefs(TMP)
-    expect(prefs).toEqual({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE })
+    expect(prefs).toEqual({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE, customFonts: [] })
   })
 })
 
