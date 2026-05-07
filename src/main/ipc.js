@@ -37,6 +37,8 @@ ipcMain.handle('projects:create', (_, name) => {
     excelPath: null,
     columns: [],
     zones: [],
+    projectFont: null,
+    projectFontSize: null,
   }
   fs.writeFileSync(path.join(projectDir, 'project.json'), JSON.stringify(project, null, 2))
   return project
