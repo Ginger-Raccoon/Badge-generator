@@ -43,6 +43,9 @@ export default function ProjectSettingsDrawer({ open, onClose, project, prefs, o
           >
             <MenuItem value="Roboto">Roboto</MenuItem>
             <MenuItem value="PTSerif">PT Serif</MenuItem>
+            {(prefs.customFonts ?? []).map(f => (
+              <MenuItem key={f.name} value={f.name}>{f.name}</MenuItem>
+            ))}
           </Select>
         </FormControl>
 
