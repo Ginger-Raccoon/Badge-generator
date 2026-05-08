@@ -2,6 +2,7 @@ import { ipcMain, dialog, app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 import { loadPrefs, savePrefs } from './prefs.js'
+import { scanSystemFonts } from './fonts.js'
 
 const PROJECTS_DIR = path.join(app.getPath('documents'), 'BadgeGenerator')
 
@@ -108,4 +109,34 @@ ipcMain.handle('projects:deleteAll', () => {
   for (const entry of entries) {
     fs.rmSync(path.join(PROJECTS_DIR, entry.name), { recursive: true })
   }
+})
+
+ipcMain.handle('fonts:scanSystem', () => {
+  return scanSystemFonts()
+})
+
+ipcMain.handle('fonts:loadCustom', (_, paths) => {
+  return paths.map(filePath => ({
+    name: path.basename(filePath, path.extname(filePath)),
+    bytes: Array.from(fs.readFileSync(filePath)),
+  }))
+})
+
+ipcMain.handle('projects:usedFonts', () => {
+  ensureProjectsDir()
+  const names = new Set()
+  const entries = fs.readdirSync(PROJECTS_DIR, { withFileTypes: true })
+    .filter(d => d.isDirectory())
+  for (const entry of entries) {
+    const file = path.join(PROJECTS_DIR, entry.name, 'project.json')
+    if (!fs.existsSync(file)) continue
+    try {
+      const project = JSON.parse(fs.readFileSync(file, 'utf8'))
+      if (project.projectFont) names.add(project.projectFont)
+      for (const zone of project.zones ?? []) {
+        if (zone.font) names.add(zone.font)
+      }
+    } catch {}
+  }
+  return Array.from(names)
 })
