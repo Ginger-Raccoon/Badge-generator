@@ -5,7 +5,7 @@ module.exports = {
   packagerConfig: {
     asar: true,
     extraResource: ['public/fonts'],
-    name: 'badjeek',
+    executableName: 'badjeek',
     productName: 'Бейджик',
     icon: './icon',
     osxSign: {
