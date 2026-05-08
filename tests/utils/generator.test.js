@@ -59,4 +59,21 @@ describe('generatePdf', () => {
 
     await expect(generatePdf({ ...baseArgs, fontBytes, zones, rows })).resolves.toBeDefined()
   })
+
+  test('кастомные шрифты встраиваются и применяются к зонам', async () => {
+    const fontBytes = {
+      roboto: loadFont('Roboto-Regular.ttf'),
+      ptSerif: loadFont('PTSerif-Regular.ttf'),
+      custom: [{ name: 'MyCustom', bytes: loadFont('Roboto-Regular.ttf') }],
+    }
+    const zones = [{
+      id: '1', x: 100, y: 100, width: 200, height: 20,
+      column: 'Имя', font: 'MyCustom', fontSize: 12,
+    }]
+    const rows = [{ Имя: 'Тест' }]
+
+    const result = await generatePdf({ ...baseArgs, fontBytes, zones, rows })
+    expect(result).toBeInstanceOf(Uint8Array)
+    expect(result.length).toBeGreaterThan(0)
+  })
 })

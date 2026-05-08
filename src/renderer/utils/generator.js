@@ -13,6 +13,9 @@ export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontByte
   const robotoFont = await outputDoc.embedFont(new Uint8Array(fontBytes.roboto))
   const ptSerifFont = await outputDoc.embedFont(new Uint8Array(fontBytes.ptSerif))
   const fonts = { Roboto: robotoFont, PTSerif: ptSerifFont }
+  for (const { name, bytes } of (fontBytes.custom ?? [])) {
+    fonts[name] = await outputDoc.embedFont(new Uint8Array(bytes))
+  }
 
   const pngImage = await outputDoc.embedPng(new Uint8Array(pngBytes))
 
