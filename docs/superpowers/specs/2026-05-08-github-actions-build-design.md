@@ -21,7 +21,7 @@
 
 | Runner | Maker | Артефакт |
 |--------|-------|---------|
-| `macos-latest` | `maker-zip` | `.zip` с `.app` внутри |
+| `macos-latest` | `maker-dmg` | `.dmg` |
 | `windows-latest` | `maker-squirrel` | `Setup.exe` |
 
 ## Шаги каждого job
@@ -35,13 +35,14 @@
 ## Результат
 
 После успешного запуска на вкладке Actions появляются два артефакта:
-- `build-macos` — архив с `.app`
+- `build-macos` — `.dmg` установщик
 - `build-windows` — папка с `Setup.exe` и `nupkg`
 
 Артефакты хранятся 90 дней, скачиваются вручную.
 
 ## Предварительные требования
 
+- Установить `@electron-forge/maker-dmg` и добавить в `forge.config.cjs`
 - Создать GitHub-репозиторий
 - Добавить remote и запушить ветку `main`
 
