@@ -3,7 +3,8 @@ import {
   Drawer, Box, Typography, IconButton, Select, MenuItem,
   FormControl, InputLabel, TextField, Divider, FormControlLabel,
   Checkbox, Button, Dialog, DialogTitle, DialogContent,
-  DialogContentText, DialogActions,
+  DialogContentText, DialogActions, CircularProgress,
+  List, ListItem, ListItemButton, ListItemText,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
@@ -13,6 +14,11 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
   const [fontSizeInput, setFontSizeInput] = useState(String(defaultFontSize))
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmInput, setConfirmInput] = useState('')
+  const [fontDialogOpen, setFontDialogOpen] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [scannedFonts, setScannedFonts] = useState([])
+  const [usedFonts, setUsedFonts] = useState(new Set())
+  const [selectedFontNames, setSelectedFontNames] = useState(new Set())
 
   useEffect(() => {
     if (open) {
@@ -35,6 +41,43 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
     onDeleteAll()
     setConfirmInput('')
     setConfirmOpen(false)
+  }
+
+  async function handleOpenFontDialog() {
+    setScanning(true)
+    const [found, used] = await Promise.all([
+      window.api.scanSystemFonts(),
+      window.api.getUsedFonts(),
+    ])
+    const usedSet = new Set(used)
+    setScannedFonts(found)
+    setUsedFonts(usedSet)
+    setSelectedFontNames(new Set([
+      ...(prefs.customFonts ?? []).map(f => f.name),
+      ...used,
+    ]))
+    setScanning(false)
+    setFontDialogOpen(true)
+  }
+
+  function handleApplyFonts() {
+    const usedNotScanned = (prefs.customFonts ?? []).filter(f =>
+      usedFonts.has(f.name) && !scannedFonts.some(sf => sf.name === f.name)
+    )
+    const newCustomFonts = [
+      ...scannedFonts.filter(f => selectedFontNames.has(f.name)),
+      ...usedNotScanned,
+    ]
+    onPrefsChange({ customFonts: newCustomFonts })
+    setFontDialogOpen(false)
+  }
+
+  function toggleFont(name) {
+    setSelectedFontNames(prev => {
+      const next = new Set(prev)
+      next.has(name) ? next.delete(name) : next.add(name)
+      return next
+    })
   }
 
   return (
@@ -60,8 +103,22 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
           >
             <MenuItem value="Roboto">Roboto</MenuItem>
             <MenuItem value="PTSerif">PT Serif</MenuItem>
+            {(prefs.customFonts ?? []).map(f => (
+              <MenuItem key={f.name} value={f.name}>{f.name}</MenuItem>
+            ))}
           </Select>
         </FormControl>
+
+        <Button
+          variant="outlined"
+          fullWidth
+          disabled={scanning}
+          onClick={handleOpenFontDialog}
+          sx={{ mb: 2 }}
+          startIcon={scanning ? <CircularProgress size={16} /> : null}
+        >
+          Управление шрифтами
+        </Button>
 
         <TextField
           fullWidth
@@ -132,6 +189,45 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
           >
             Удалить
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog
+        open={fontDialogOpen}
+        onClose={() => setFontDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Системные шрифты</DialogTitle>
+        <DialogContent sx={{ p: 0 }}>
+          <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
+            {scannedFonts.map(f => {
+              const isUsed = usedFonts.has(f.name)
+              return (
+                <ListItem key={f.name} disablePadding>
+                  <ListItemButton
+                    disabled={isUsed}
+                    onClick={() => !isUsed && toggleFont(f.name)}
+                  >
+                    <Checkbox
+                      size="small"
+                      checked={selectedFontNames.has(f.name)}
+                      disabled={isUsed}
+                      tabIndex={-1}
+                    />
+                    <ListItemText
+                      primary={f.name}
+                      secondary={isUsed ? 'используется' : null}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              )
+            })}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFontDialogOpen(false)}>Отмена</Button>
+          <Button variant="contained" onClick={handleApplyFonts}>Применить</Button>
         </DialogActions>
       </Dialog>
     </>
