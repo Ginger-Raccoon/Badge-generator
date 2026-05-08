@@ -8,10 +8,7 @@ module.exports = {
     icon: './icon',
     osxSign: {
       identity: '-',
-      optionsForFile: () => ({
-        entitlements: './entitlements.plist',
-        entitlementsInherit: './entitlements.plist',
-      }),
+      identityValidation: false,
     },
   },
   rebuildConfig: {},
