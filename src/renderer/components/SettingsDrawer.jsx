@@ -19,6 +19,7 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
   const [scannedFonts, setScannedFonts] = useState([])
   const [usedFonts, setUsedFonts] = useState(new Set())
   const [selectedFontNames, setSelectedFontNames] = useState(new Set())
+  const [fontSearch, setFontSearch] = useState('')
 
   useEffect(() => {
     if (open) {
@@ -44,6 +45,7 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
   }
 
   async function handleOpenFontDialog() {
+    setFontSearch('')
     setScanning(true)
     const [found, used] = await Promise.all([
       window.api.scanSystemFonts(),
@@ -200,8 +202,18 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
       >
         <DialogTitle>Системные шрифты</DialogTitle>
         <DialogContent sx={{ p: 0 }}>
+          <Box sx={{ px: 2, pt: 1, pb: 1 }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Поиск..."
+              value={fontSearch}
+              onChange={e => setFontSearch(e.target.value)}
+              autoFocus
+            />
+          </Box>
           <List dense sx={{ maxHeight: 400, overflow: 'auto' }}>
-            {scannedFonts.map(f => {
+            {scannedFonts.filter(f => f.name.toLowerCase().includes(fontSearch.toLowerCase())).map(f => {
               const isUsed = usedFonts.has(f.name)
               return (
                 <ListItem key={f.name} disablePadding>
