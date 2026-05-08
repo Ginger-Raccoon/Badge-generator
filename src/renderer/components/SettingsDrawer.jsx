@@ -113,6 +113,7 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
 
         <Button
           variant="outlined"
+          color="inherit"
           fullWidth
           disabled={scanning}
           onClick={handleOpenFontDialog}
