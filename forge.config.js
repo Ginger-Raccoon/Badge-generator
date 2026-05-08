@@ -8,6 +8,9 @@ module.exports = {
     name: 'badjeek',
     productName: 'Бейджик',
     icon: './icon',
+    osxSign: {
+      identity: '-',
+    },
   },
   rebuildConfig: {},
   makers: [
