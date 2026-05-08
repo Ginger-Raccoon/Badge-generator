@@ -7,7 +7,7 @@ module.exports = {
     productName: 'Бейджик',
     icon: './icon',
     osxSign: {
-      identity: null,
+      identity: '-',
       optionsForFile: () => ({
         entitlements: './entitlements.plist',
         entitlementsInherit: './entitlements.plist',
