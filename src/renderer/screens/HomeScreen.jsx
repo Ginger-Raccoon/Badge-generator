@@ -17,7 +17,7 @@ export default function HomeScreen({ onOpenProject }) {
   const [projects, setProjects] = useState([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newName, setNewName] = useState('')
-  const [prefs, setPrefs] = useState({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE })
+  const [prefs, setPrefs] = useState({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE, customFonts: [] })
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deleteConfirmChecked, setDeleteConfirmChecked] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
