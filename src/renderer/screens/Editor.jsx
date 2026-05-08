@@ -150,6 +150,9 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       const effectiveDpi = project.templateDpi ?? psd.resolution
       const excelBytes = await window.api.readFileBytes(project.excelPath)
       const fontBytes = await window.api.loadFonts()
+      if ((prefs.customFonts ?? []).length > 0) {
+        fontBytes.custom = await window.api.loadCustomFonts(prefs.customFonts.map(f => f.path))
+      }
       const { rows: excelRows } = readExcel(new Uint8Array(excelBytes))
 
       const pdfBytes = await generatePdf({
