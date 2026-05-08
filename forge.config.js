@@ -6,6 +6,13 @@ module.exports = {
     executableName: 'badjeek',
     productName: 'Бейджик',
     icon: './icon',
+    osxSign: {
+      identity: null,
+      optionsForFile: () => ({
+        entitlements: './entitlements.plist',
+        entitlementsInherit: './entitlements.plist',
+      }),
+    },
   },
   rebuildConfig: {},
   makers: [
