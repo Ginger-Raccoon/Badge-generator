@@ -113,11 +113,10 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
 
         <Button
           variant="outlined"
-          color="inherit"
           fullWidth
           disabled={scanning}
           onClick={handleOpenFontDialog}
-          sx={{ mb: 2 }}
+          sx={{ mb: 2, color: 'text.secondary', borderColor: 'rgba(0,0,0,0.23)', '&:hover': { borderColor: 'rgba(0,0,0,0.87)', bgcolor: 'action.hover' } }}
           startIcon={scanning ? <CircularProgress size={16} /> : null}
         >
           Управление шрифтами
