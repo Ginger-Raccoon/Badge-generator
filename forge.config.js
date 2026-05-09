@@ -6,9 +6,27 @@ module.exports = {
     executableName: 'badjeek',
     productName: 'Бейджик',
     icon: './icon',
-    osxSign: {
-      identity: '-',
-      identityValidation: false,
+  },
+  hooks: {
+    postPackage: async (_, options) => {
+      if (process.platform !== 'darwin') return;
+      const { execFileSync } = require('child_process');
+      const path = require('path');
+      const fs = require('fs');
+      const entitlements = path.join(__dirname, 'entitlements.plist');
+      for (const outputPath of options.outputPaths) {
+        const appName = fs.readdirSync(outputPath).find(f => f.endsWith('.app'));
+        if (!appName) continue;
+        const appPath = path.join(outputPath, appName);
+        execFileSync('codesign', [
+          '--sign', '-',
+          '--force',
+          '--deep',
+          '--timestamp=none',
+          '--entitlements', entitlements,
+          appPath,
+        ], { stdio: 'inherit' });
+      }
     },
   },
   rebuildConfig: {},
