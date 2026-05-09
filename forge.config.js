@@ -10,22 +10,25 @@ module.exports = {
   hooks: {
     postPackage: async (_, options) => {
       if (process.platform !== 'darwin') return;
-      const { execFileSync } = require('child_process');
+      const { spawnSync } = require('child_process');
       const path = require('path');
       const fs = require('fs');
-      const entitlements = path.join(__dirname, 'entitlements.plist');
       for (const outputPath of options.outputPaths) {
         const appName = fs.readdirSync(outputPath).find(f => f.endsWith('.app'));
         if (!appName) continue;
         const appPath = path.join(outputPath, appName);
-        execFileSync('codesign', [
+        const result = spawnSync('codesign', [
           '--sign', '-',
           '--force',
           '--deep',
           '--timestamp=none',
-          '--entitlements', entitlements,
           appPath,
-        ], { stdio: 'inherit' });
+        ], { encoding: 'utf8' });
+        if (result.stdout) process.stdout.write(result.stdout);
+        if (result.stderr) process.stderr.write(result.stderr);
+        if (result.status !== 0) {
+          throw new Error(`codesign failed (exit ${result.status}):\n${result.stderr}`);
+        }
       }
     },
   },
