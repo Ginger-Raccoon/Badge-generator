@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { loadPrefs, savePrefs } from './prefs.js'
 import { scanSystemFonts } from './fonts.js'
+import fontkit from '@pdf-lib/fontkit'
 
 const PROJECTS_DIR = path.join(app.getPath('documents'), 'BadgeGenerator')
 
@@ -116,10 +117,16 @@ ipcMain.handle('fonts:scanSystem', () => {
 })
 
 ipcMain.handle('fonts:loadCustom', (_, paths) => {
-  return paths.map(filePath => ({
-    name: path.basename(filePath, path.extname(filePath)),
-    bytes: Array.from(fs.readFileSync(filePath)),
-  }))
+  return paths.map(filePath => {
+    const bytes = fs.readFileSync(filePath)
+    let name
+    try {
+      name = fontkit.create(bytes).familyName || path.basename(filePath, path.extname(filePath))
+    } catch {
+      name = path.basename(filePath, path.extname(filePath))
+    }
+    return { name, bytes: Array.from(bytes) }
+  })
 })
 
 ipcMain.handle('projects:usedFonts', () => {

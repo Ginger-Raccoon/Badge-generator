@@ -1,6 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
+import fontkit from '@pdf-lib/fontkit'
 
 export function getSystemFontDirs(platform, homeDir) {
   if (platform === 'darwin') {
@@ -30,7 +31,14 @@ function collectFonts(dir) {
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name).toLowerCase()
         if (ext === '.ttf' || ext === '.otf') {
-          result.push({ name: path.basename(entry.name, ext), path: fullPath })
+          let name
+          try {
+            const font = fontkit.create(fs.readFileSync(fullPath))
+            name = font.familyName || path.basename(entry.name, ext)
+          } catch {
+            name = path.basename(entry.name, ext)
+          }
+          result.push({ name, path: fullPath })
         }
       }
     }
