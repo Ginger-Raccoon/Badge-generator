@@ -2,7 +2,7 @@ import { useState } from 'react'
 import {
   Box, Typography, List, ListItem, ListItemText, Collapse,
   Select, MenuItem, FormControl, InputLabel, IconButton,
-  Divider, TextField, Checkbox, Tooltip, InputAdornment,
+  Divider, TextField, Checkbox, Tooltip, InputAdornment, Autocomplete,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/Delete'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
@@ -33,6 +33,11 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
 
   function deleteZone(id) {
     onZonesChange(zones.filter(z => z.id !== id))
+  }
+
+  function handleFontSizeCommit(zone, value) {
+    const v = parseInt(value, 10)
+    if (!isNaN(v) && v >= 6 && v <= 200) updateZone(zone.id, { fontSize: v })
   }
 
   function getSplitOptions(zone) {
@@ -214,17 +219,17 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                     </Select>
                   </FormControl>
 
-                  <FormControl size="small" fullWidth onClick={e => e.stopPropagation()}>
-                    <InputLabel shrink>Размер</InputLabel>
-                    <Select
-                      value={zone.fontSize}
-                      label="Размер"
-                      notched
-                      onChange={e => updateZone(zone.id, { fontSize: e.target.value })}
-                    >
-                      {FONT_SIZES.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
-                    </Select>
-                  </FormControl>
+                  <Autocomplete
+                    size="small"
+                    freeSolo
+                    disableClearable
+                    options={FONT_SIZES.map(String)}
+                    value={String(zone.fontSize)}
+                    onChange={(_, val) => handleFontSizeCommit(zone, val)}
+                    onBlur={e => handleFontSizeCommit(zone, e.target.value)}
+                    onClick={e => e.stopPropagation()}
+                    renderInput={params => <TextField {...params} label="Размер" />}
+                  />
                 </Box>
               </Collapse>
             </ListItem>
