@@ -330,6 +330,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
             columnSplits={project.columnSplits ?? {}}
             onColumnSplitsChange={splits => save({ ...project, columnSplits: splits })}
             previewRow={previewRow}
+            customFonts={prefs.customFonts ?? []}
           />
         </Box>
       </Box>

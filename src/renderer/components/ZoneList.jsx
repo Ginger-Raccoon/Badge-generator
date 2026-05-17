@@ -9,14 +9,14 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 
-const FONTS = [
+const BUILTIN_FONTS = [
   { value: 'Roboto', label: 'Roboto' },
   { value: 'PTSerif', label: 'PT Serif' },
 ]
 
 const FONT_SIZES = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48]
 
-export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone, onZonesChange, columnSplits = {}, onColumnSplitsChange, previewRow }) {
+export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone, onZonesChange, columnSplits = {}, onColumnSplitsChange, previewRow, customFonts = [] }) {
   const [collapsedZones, setCollapsedZones] = useState(new Set())
 
   function toggleCollapse(id) {
@@ -205,8 +205,11 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                       label="Шрифт"
                       onChange={e => updateZone(zone.id, { font: e.target.value })}
                     >
-                      {FONTS.map(f => (
+                      {BUILTIN_FONTS.map(f => (
                         <MenuItem key={f.value} value={f.value}>{f.label}</MenuItem>
+                      ))}
+                      {customFonts.map(f => (
+                        <MenuItem key={f.name} value={f.name}>{f.name}</MenuItem>
                       ))}
                     </Select>
                   </FormControl>
