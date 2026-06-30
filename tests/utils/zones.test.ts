@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { applyProjectSettings } from '../../src/renderer/utils/zones.js'
+import { applyProjectSettings } from '../../src/renderer/utils/zones'
 
 describe('applyProjectSettings', () => {
   test('обновляет font у зон с effectiveOldFont', () => {

@@ -1,4 +1,4 @@
-import { canvasToDoc, docToCanvas } from '../../src/renderer/utils/coordinates.js'
+import { canvasToDoc, docToCanvas } from '../../src/renderer/utils/coordinates'
 
 const canvasSize = { width: 900, height: 1200 }
 const docSize = { width: 1240, height: 1748 }

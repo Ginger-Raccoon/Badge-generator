@@ -1,6 +1,7 @@
-const { contextBridge, ipcRenderer } = require('electron')
+import { contextBridge, ipcRenderer } from 'electron'
+import type { BadgeApi } from './shared/types'
 
-contextBridge.exposeInMainWorld('api', {
+const api: BadgeApi = {
   listProjects:      ()             => ipcRenderer.invoke('projects:list'),
   createProject:     (name)         => ipcRenderer.invoke('projects:create', name),
   loadProject:       (name)         => ipcRenderer.invoke('projects:load', name),
@@ -18,4 +19,6 @@ contextBridge.exposeInMainWorld('api', {
   savePrefs:         (prefs)        => ipcRenderer.invoke('prefs:save', prefs),
   deleteProject:     (name)         => ipcRenderer.invoke('projects:delete', name),
   deleteAllProjects: ()             => ipcRenderer.invoke('projects:deleteAll'),
-})
+}
+
+contextBridge.exposeInMainWorld('api', api)

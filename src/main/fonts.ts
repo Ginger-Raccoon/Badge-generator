@@ -2,8 +2,9 @@ import fs from 'fs'
 import path from 'path'
 import os from 'os'
 import fontkit from '@pdf-lib/fontkit'
+import type { FontEntry } from '../shared/types'
 
-export function getSystemFontDirs(platform, homeDir) {
+export function getSystemFontDirs(platform: string, homeDir: string): string[] {
   if (platform === 'darwin') {
     return [
       path.join(homeDir, 'Library', 'Fonts'),
@@ -20,8 +21,8 @@ export function getSystemFontDirs(platform, homeDir) {
   ]
 }
 
-function collectFonts(dir) {
-  const result = []
+function collectFonts(dir: string): FontEntry[] {
+  const result: FontEntry[] = []
   if (!fs.existsSync(dir)) return result
   try {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -31,7 +32,7 @@ function collectFonts(dir) {
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name).toLowerCase()
         if (ext === '.ttf' || ext === '.otf') {
-          let name
+          let name: string
           try {
             const font = fontkit.create(fs.readFileSync(fullPath))
             name = font.familyName || path.basename(entry.name, ext)
@@ -48,9 +49,9 @@ function collectFonts(dir) {
   return result
 }
 
-export function scanFontDirs(dirs) {
-  const seen = new Set()
-  const result = []
+export function scanFontDirs(dirs: string[]): FontEntry[] {
+  const seen = new Set<string>()
+  const result: FontEntry[] = []
   for (const dir of dirs) {
     for (const font of collectFonts(dir)) {
       if (!seen.has(font.name)) {
@@ -62,6 +63,6 @@ export function scanFontDirs(dirs) {
   return result.sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export function scanSystemFonts() {
+export function scanSystemFonts(): FontEntry[] {
   return scanFontDirs(getSystemFontDirs(process.platform, os.homedir()))
 }

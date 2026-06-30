@@ -14,28 +14,55 @@ import { generatePdf } from '../utils/generator'
 import { parsePsd } from '../utils/psd'
 import ProjectSettingsDrawer from '../components/ProjectSettingsDrawer'
 import { applyProjectSettings } from '../utils/zones'
-import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults'
+import type { ExcelRow, FontEntry, ParsedPsd, Project, Zone } from '../../shared/types'
 
-export default function Editor({ project, onProjectUpdate, onBack }) {
-  const [selectedZoneId, setSelectedZoneId] = useState(null)
-  const [snackbar, setSnackbar] = useState(null)
+interface EditorProps {
+  project: Project
+  onProjectUpdate: (project: Project) => void
+  onBack: () => void
+}
+
+interface Snackbar {
+  message: string
+  severity: 'success' | 'error' | 'warning'
+}
+
+interface DpiWarning {
+  detected: number
+  missing: boolean
+}
+
+type EditorPrefs = {
+  defaultFont: string
+  defaultFontSize: number
+  customFonts?: FontEntry[]
+}
+
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
+export default function Editor({ project, onProjectUpdate, onBack }: EditorProps) {
+  const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null)
+  const [snackbar, setSnackbar] = useState<Snackbar | null>(null)
   const [generating, setGenerating] = useState(false)
   const [genProgress, setGenProgress] = useState(0)
-  const [dpiWarning, setDpiWarning] = useState(null)
+  const [dpiWarning, setDpiWarning] = useState<DpiWarning | null>(null)
   const [dpiInput, setDpiInput] = useState('')
-  const [parsedPsd, setParsedPsd] = useState(null)
-  const [rows, setRows] = useState([])
+  const [parsedPsd, setParsedPsd] = useState<ParsedPsd | null>(null)
+  const [rows, setRows] = useState<ExcelRow[]>([])
   const [previewRowIndex, setPreviewRowIndex] = useState(0)
   const [pageInput, setPageInput] = useState('1')
-  const [prefs, setPrefs] = useState({ defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE })
+  const [prefs, setPrefs] = useState<EditorPrefs>({ defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE })
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false)
   const [sideWidth, setSideWidth] = useState(300)
   const dragging = useRef(false)
 
-  const handleDividerMouseDown = useCallback(e => {
+  const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
     dragging.current = true
-    const onMove = mv => {
+    const onMove = (mv: MouseEvent) => {
       if (!dragging.current) return
       const newWidth = window.innerWidth - mv.clientX
       setSideWidth(Math.max(200, Math.min(600, newWidth)))
@@ -77,7 +104,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     init()
   }, [])
 
-  async function save(updated) {
+  async function save(updated: Project) {
     await window.api.saveProject(updated.name, updated)
     onProjectUpdate(updated)
   }
@@ -90,7 +117,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     await save({ ...project, templatePsdPath: filePath, templateDpi: null, zones: [] })
   }
 
-  function handlePsdParsed(parsed) {
+  function handlePsdParsed(parsed: ParsedPsd) {
     setParsedPsd(parsed)
     if (project.templateDpi != null) return
     const effectiveDpi = parsed.resolution
@@ -122,15 +149,15 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
       setPreviewRowIndex(0)
       setSnackbar({ message: `Загружено ${columns.length} столбцов`, severity: 'success' })
     } catch (err) {
-      setSnackbar({ message: `Ошибка загрузки Excel: ${err.message}`, severity: 'error' })
+      setSnackbar({ message: `Ошибка загрузки Excel: ${errorMessage(err)}`, severity: 'error' })
     }
   }
 
-  async function handleZonesChange(zones) {
+  async function handleZonesChange(zones: Zone[]) {
     await save({ ...project, zones })
   }
 
-  async function handleProjectSettingsChange(patch) {
+  async function handleProjectSettingsChange(patch: { projectFont?: string; projectFontSize?: number }) {
     const effectiveOldFont = project.projectFont ?? prefs.defaultFont ?? DEFAULT_FONT
     const effectiveOldFontSize = project.projectFontSize ?? prefs.defaultFontSize ?? DEFAULT_FONT_SIZE
     const updatedZones = applyProjectSettings(project.zones, patch, effectiveOldFont, effectiveOldFontSize)
@@ -144,14 +171,14 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
     try {
       let psd = parsedPsd
       if (!psd) {
-        const bytes = await window.api.readFileBytes(project.templatePsdPath)
+        const bytes = await window.api.readFileBytes(project.templatePsdPath!)
         psd = await parsePsd(new Uint8Array(bytes))
       }
       const effectiveDpi = project.templateDpi ?? psd.resolution
-      const excelBytes = await window.api.readFileBytes(project.excelPath)
+      const excelBytes = await window.api.readFileBytes(project.excelPath!)
       const fontBytes = await window.api.loadFonts()
       if ((prefs.customFonts ?? []).length > 0) {
-        fontBytes.custom = await window.api.loadCustomFonts(prefs.customFonts.map(f => f.path))
+        fontBytes.custom = await window.api.loadCustomFonts(prefs.customFonts!.map(f => f.path))
       }
       const { rows: excelRows } = readExcel(new Uint8Array(excelBytes))
 
@@ -173,7 +200,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
         setSnackbar({ message: `Сохранено: ${savePath.split(/[\\/]/).pop()}`, severity: 'success' })
       }
     } catch (err) {
-      setSnackbar({ message: `Ошибка: ${err.message}`, severity: 'error' })
+      setSnackbar({ message: `Ошибка: ${errorMessage(err)}`, severity: 'error' })
     } finally {
       setGenerating(false)
       setGenProgress(0)
@@ -240,7 +267,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
                   value={dpiInput}
                   onChange={e => setDpiInput(e.target.value)}
                   sx={{ width: 80 }}
-                  inputProps={{ inputMode: 'numeric' }}
+                  slotProps={{ htmlInput: { inputMode: 'numeric' } }}
                 />
                 <Button size="small" variant="outlined" onClick={handleDpiApply}>
                   Применить
@@ -282,7 +309,7 @@ export default function Editor({ project, onProjectUpdate, onBack }) {
                       const v = parseInt(pageInput, 10)
                       if (isNaN(v) || pageInput.trim() === '') setPageInput(String(previewRowIndex + 1))
                     }}
-                    inputProps={{ min: 1, max: rows.length, style: { textAlign: 'center', width: 40 } }}
+                    slotProps={{ htmlInput: { min: 1, max: rows.length, style: { textAlign: 'center', width: 40 } } }}
                     sx={{ width: 60 }}
                   />
                   <Typography variant="body2" color="text.secondary">/ {rows.length}</Typography>

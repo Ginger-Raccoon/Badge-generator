@@ -1,6 +1,8 @@
-export function wrapText(text, maxWidth, fontSize, measureFn) {
+type MeasureFn = (text: string, fontSize: number) => number
+
+export function wrapText(text: unknown, maxWidth: number, fontSize: number, measureFn: MeasureFn): string[] {
   const words = String(text).split(' ')
-  const lines = []
+  const lines: string[] = []
   let current = ''
 
   for (const word of words) {
@@ -16,7 +18,12 @@ export function wrapText(text, maxWidth, fontSize, measureFn) {
   return lines.length > 0 ? lines : ['']
 }
 
-export function splitValue(value, splitIndex, zoneSplitChar, columnSplitChar) {
+export function splitValue(
+  value: unknown,
+  splitIndex: number | null,
+  zoneSplitChar: string,
+  columnSplitChar: string,
+): string {
   if (splitIndex == null) return String(value)
   const char = zoneSplitChar || columnSplitChar || ''
   if (!char) return String(value)

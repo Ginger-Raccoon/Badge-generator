@@ -7,18 +7,28 @@ import {
   List, ListItem, ListItemButton, ListItemText,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults'
+import type { FontEntry, Prefs } from '../../shared/types'
 
-export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, projects, onDeleteAll }) {
+interface SettingsDrawerProps {
+  open: boolean
+  onClose: () => void
+  prefs: Prefs
+  onPrefsChange: (patch: Partial<Prefs>) => void
+  projects: string[]
+  onDeleteAll: () => void
+}
+
+export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, projects, onDeleteAll }: SettingsDrawerProps) {
   const { defaultFontSize = DEFAULT_FONT_SIZE, defaultFont = DEFAULT_FONT } = prefs
   const [fontSizeInput, setFontSizeInput] = useState(String(defaultFontSize))
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmInput, setConfirmInput] = useState('')
   const [fontDialogOpen, setFontDialogOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
-  const [scannedFonts, setScannedFonts] = useState([])
-  const [usedFonts, setUsedFonts] = useState(new Set())
-  const [selectedFontNames, setSelectedFontNames] = useState(new Set())
+  const [scannedFonts, setScannedFonts] = useState<FontEntry[]>([])
+  const [usedFonts, setUsedFonts] = useState<Set<string>>(new Set())
+  const [selectedFontNames, setSelectedFontNames] = useState<Set<string>>(new Set())
   const [fontSearch, setFontSearch] = useState('')
 
   useEffect(() => {
@@ -74,7 +84,7 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
     setFontDialogOpen(false)
   }
 
-  function toggleFont(name) {
+  function toggleFont(name: string) {
     setSelectedFontNames(prev => {
       const next = new Set(prev)
       next.has(name) ? next.delete(name) : next.add(name)
@@ -88,7 +98,7 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
         anchor="right"
         open={open}
         onClose={onClose}
-        PaperProps={{ sx: { width: 320 } }}
+        slotProps={{ paper: { sx: { width: 320 } } }}
       >
         <Box sx={{ px: '32px', py: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
@@ -130,7 +140,7 @@ export default function SettingsDrawer({ open, onClose, prefs, onPrefsChange, pr
           value={fontSizeInput}
           onChange={e => setFontSizeInput(e.target.value)}
           onBlur={handleFontSizeBlur}
-          inputProps={{ min: 6, max: 200 }}
+          slotProps={{ htmlInput: { min: 6, max: 200 } }}
           sx={{ mb: 2 }}
         />
 

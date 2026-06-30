@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material'
 import HomeScreen from './screens/HomeScreen'
 import Editor from './screens/Editor'
+import type { Project } from '../shared/types'
 
 const theme = createTheme({
   palette: {
@@ -21,7 +22,7 @@ const theme = createTheme({
 })
 
 export default function App() {
-  const [project, setProject] = useState(null)
+  const [project, setProject] = useState<Project | null>(null)
 
   return (
     <ThemeProvider theme={theme}>

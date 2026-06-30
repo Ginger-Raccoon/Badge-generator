@@ -2,7 +2,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { getSystemFontDirs, scanFontDirs } from '../../src/main/fonts.js'
+import { getSystemFontDirs, scanFontDirs } from '../../src/main/fonts'
 
 describe('getSystemFontDirs', () => {
   test('macOS включает папки в правильном порядке', () => {
@@ -25,7 +25,7 @@ describe('getSystemFontDirs', () => {
 })
 
 describe('scanFontDirs', () => {
-  let tmp
+  let tmp: string
 
   beforeEach(() => {
     tmp = mkdtempSync(join(tmpdir(), 'fonts-test-'))

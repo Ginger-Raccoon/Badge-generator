@@ -1,19 +1,37 @@
+import type { Zone } from '../../shared/types'
+
 const HANDLE_R = 5
 
-const CORNER_CURSORS = {
+export type Corner = 'tl' | 'tr' | 'bl' | 'br'
+
+const CORNER_CURSORS: Record<Corner, string> = {
   tl: 'nwse-resize',
   tr: 'nesw-resize',
   bl: 'nesw-resize',
   br: 'nwse-resize',
 }
 
-export default function ZoneRect({ zone, isSelected, onMoveStart, onResizeStart }) {
+export interface CanvasZone extends Zone {
+  canvasX: number
+  canvasY: number
+  canvasWidth: number
+  canvasHeight: number
+}
+
+interface ZoneRectProps {
+  zone: CanvasZone
+  isSelected: boolean
+  onMoveStart?: (e: React.MouseEvent) => void
+  onResizeStart?: (e: React.MouseEvent, corner: Corner) => void
+}
+
+export default function ZoneRect({ zone, isSelected, onMoveStart, onResizeStart }: ZoneRectProps) {
   const x = zone.canvasX
   const y = zone.canvasY
   const w = zone.canvasWidth
   const h = zone.canvasHeight
 
-  const corners = [
+  const corners: { key: Corner; cx: number; cy: number }[] = [
     { key: 'tl', cx: x,     cy: y },
     { key: 'tr', cx: x + w, cy: y },
     { key: 'bl', cx: x,     cy: y + h },

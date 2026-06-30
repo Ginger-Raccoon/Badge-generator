@@ -1,6 +1,16 @@
-export function applyProjectSettings(zones, patch, effectiveOldFont, effectiveOldFontSize) {
+interface ProjectSettingsPatch {
+  projectFont?: string
+  projectFontSize?: number
+}
+
+export function applyProjectSettings<T extends { font: string; fontSize: number }>(
+  zones: T[],
+  patch: ProjectSettingsPatch,
+  effectiveOldFont: string,
+  effectiveOldFontSize: number,
+): T[] {
   return zones.map(zone => {
-    const updates = {}
+    const updates: Partial<Pick<T, 'font' | 'fontSize'>> = {}
     if ('projectFont' in patch && zone.font === effectiveOldFont) {
       updates.font = patch.projectFont
     }

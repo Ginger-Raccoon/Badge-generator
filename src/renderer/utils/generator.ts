@@ -1,8 +1,33 @@
-import { PDFDocument } from 'pdf-lib'
+import { PDFDocument, PDFFont } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
-import { wrapText, splitValue } from './textLayout.js'
+import { wrapText, splitValue } from './textLayout'
+import type { ColumnSplits, ExcelRow, FontBytes } from '../../shared/types'
 
-export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontBytes, zones, rows, onProgress, columnSplits = {} }) {
+interface GeneratorZone {
+  column: string
+  font: string
+  fontSize: number
+  x: number
+  y: number
+  width: number
+  height: number
+  splitIndex?: number | null
+  splitChar?: string
+}
+
+interface GeneratePdfArgs {
+  pngBytes: Uint8Array
+  psdWidth: number
+  psdHeight: number
+  dpi: number
+  fontBytes: FontBytes
+  zones: GeneratorZone[]
+  rows: ExcelRow[]
+  onProgress?: (done: number, total: number) => void
+  columnSplits?: ColumnSplits
+}
+
+export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontBytes, zones, rows, onProgress, columnSplits = {} }: GeneratePdfArgs): Promise<Uint8Array> {
   const scale = 72 / dpi
   const pageWidth = psdWidth * scale
   const pageHeight = psdHeight * scale
@@ -12,7 +37,7 @@ export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontByte
 
   const robotoFont = await outputDoc.embedFont(new Uint8Array(fontBytes.roboto))
   const ptSerifFont = await outputDoc.embedFont(new Uint8Array(fontBytes.ptSerif))
-  const fonts = { Roboto: robotoFont, PTSerif: ptSerifFont }
+  const fonts: Record<string, PDFFont> = { Roboto: robotoFont, PTSerif: ptSerifFont }
   for (const { name, bytes } of (fontBytes.custom ?? [])) {
     fonts[name] = await outputDoc.embedFont(new Uint8Array(bytes))
   }

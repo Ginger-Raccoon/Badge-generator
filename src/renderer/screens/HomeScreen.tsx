@@ -11,14 +11,19 @@ import StarBorderIcon from '@mui/icons-material/StarBorder'
 import DeleteIcon from '@mui/icons-material/Delete'
 import SettingsIcon from '@mui/icons-material/Settings'
 import SettingsDrawer from '../components/SettingsDrawer'
-import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults'
+import type { Prefs, Project } from '../../shared/types'
 
-export default function HomeScreen({ onOpenProject }) {
-  const [projects, setProjects] = useState([])
+interface HomeScreenProps {
+  onOpenProject: (project: Project) => void
+}
+
+export default function HomeScreen({ onOpenProject }: HomeScreenProps) {
+  const [projects, setProjects] = useState<string[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [newName, setNewName] = useState('')
-  const [prefs, setPrefs] = useState({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE, customFonts: [] })
-  const [pendingDelete, setPendingDelete] = useState(null)
+  const [prefs, setPrefs] = useState<Prefs>({ favorites: [], skipDeleteConfirm: false, defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE, customFonts: [] })
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null)
   const [deleteConfirmChecked, setDeleteConfirmChecked] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
 
@@ -32,7 +37,7 @@ export default function HomeScreen({ onOpenProject }) {
     })
   }, [])
 
-  function handlePrefsChange(patch) {
+  function handlePrefsChange(patch: Partial<Prefs>) {
     setPrefs(current => {
       const next = { ...current, ...patch }
       window.api.savePrefs(next)
@@ -49,12 +54,12 @@ export default function HomeScreen({ onOpenProject }) {
     onOpenProject(project)
   }
 
-  async function handleOpen(name) {
+  async function handleOpen(name: string) {
     const project = await window.api.loadProject(name)
     onOpenProject(project)
   }
 
-  async function toggleFavorite(e, name) {
+  async function toggleFavorite(e: React.MouseEvent, name: string) {
     e.stopPropagation()
     const next = prefs.favorites.includes(name)
       ? prefs.favorites.filter(f => f !== name)
@@ -62,14 +67,14 @@ export default function HomeScreen({ onOpenProject }) {
     handlePrefsChange({ favorites: next })
   }
 
-  async function confirmDelete(name) {
+  async function confirmDelete(name: string) {
     const nextFavorites = prefs.favorites.filter(f => f !== name)
     handlePrefsChange({ favorites: nextFavorites })
     await window.api.deleteProject(name)
     setProjects(prev => prev.filter(p => p !== name))
   }
 
-  async function handleDeleteClick(e, name) {
+  async function handleDeleteClick(e: React.MouseEvent, name: string) {
     e.stopPropagation()
     if (prefs.skipDeleteConfirm) {
       await confirmDelete(name)
@@ -80,6 +85,7 @@ export default function HomeScreen({ onOpenProject }) {
   }
 
   async function handleConfirmDelete() {
+    if (pendingDelete == null) return
     try {
       const nextFavorites = prefs.favorites.filter(f => f !== pendingDelete)
       const nextSkip = deleteConfirmChecked || prefs.skipDeleteConfirm
@@ -104,7 +110,7 @@ export default function HomeScreen({ onOpenProject }) {
     }
   }
 
-  function renderItem(name) {
+  function renderItem(name: string) {
     const isFav = prefs.favorites.includes(name)
     return (
       <ListItem key={name} disablePadding sx={{ border: 1, borderColor: 'divider', borderRadius: 2, overflow: 'hidden' }}>
@@ -129,7 +135,7 @@ export default function HomeScreen({ onOpenProject }) {
       <AppBar position="static" elevation={1} color="default">
         <Toolbar variant="dense">
           <Box component="img" src="icon.png" sx={{ width: 28, height: 28, mr: 1.5, borderRadius: 1 }} />
-          <Typography variant="subtitle1" fontWeight={600} sx={{ flex: 1 }}>
+          <Typography variant="subtitle1" sx={{ flex: 1, fontWeight: 600 }}>
             Бейджик
           </Typography>
           <Button

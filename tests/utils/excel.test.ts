@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx'
-import { readExcel } from '../../src/renderer/utils/excel.js'
+import { readExcel } from '../../src/renderer/utils/excel'
 
-function makeExcelBuffer(rows) {
+function makeExcelBuffer(rows: Record<string, string>[]) {
   const ws = XLSX.utils.json_to_sheet(rows)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')

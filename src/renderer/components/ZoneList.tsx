@@ -8,6 +8,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import type { ColumnSplits, ExcelRow, FontEntry, Zone } from '../../shared/types'
 
 const BUILTIN_FONTS = [
   { value: 'Roboto', label: 'Roboto' },
@@ -16,10 +17,22 @@ const BUILTIN_FONTS = [
 
 const FONT_SIZES = [8, 10, 12, 14, 16, 18, 20, 24, 28, 32, 36, 42, 48]
 
-export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone, onZonesChange, columnSplits = {}, onColumnSplitsChange, previewRow, customFonts = [] }) {
-  const [collapsedZones, setCollapsedZones] = useState(new Set())
+interface ZoneListProps {
+  zones: Zone[]
+  columns: string[]
+  selectedZoneId: string | null
+  onSelectZone: (id: string) => void
+  onZonesChange: (zones: Zone[]) => void
+  columnSplits?: ColumnSplits
+  onColumnSplitsChange?: (splits: ColumnSplits) => void
+  previewRow: ExcelRow | null
+  customFonts?: FontEntry[]
+}
 
-  function toggleCollapse(id) {
+export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone, onZonesChange, columnSplits = {}, onColumnSplitsChange, previewRow, customFonts = [] }: ZoneListProps) {
+  const [collapsedZones, setCollapsedZones] = useState<Set<string>>(new Set())
+
+  function toggleCollapse(id: string) {
     setCollapsedZones(prev => {
       const next = new Set(prev)
       next.has(id) ? next.delete(id) : next.add(id)
@@ -27,20 +40,20 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
     })
   }
 
-  function updateZone(id, patch) {
+  function updateZone(id: string, patch: Partial<Zone>) {
     onZonesChange(zones.map(z => z.id === id ? { ...z, ...patch } : z))
   }
 
-  function deleteZone(id) {
+  function deleteZone(id: string) {
     onZonesChange(zones.filter(z => z.id !== id))
   }
 
-  function handleFontSizeCommit(zone, value) {
+  function handleFontSizeCommit(zone: Zone, value: string) {
     const v = parseInt(value, 10)
     if (!isNaN(v) && v >= 6 && v <= 200) updateZone(zone.id, { fontSize: v })
   }
 
-  function getSplitOptions(zone) {
+  function getSplitOptions(zone: Zone): { index: number; label: string }[] {
     const effectiveChar = zone.splitChar || columnSplits[zone.column] || ''
     if (!effectiveChar || !previewRow || !zone.column) return []
     const value = previewRow[zone.column]
@@ -108,9 +121,11 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
           <Box key={zone.id}>
             {i > 0 && <Divider />}
             <ListItem
-              selected={zone.id === selectedZoneId}
               onClick={() => onSelectZone(zone.id)}
-              sx={{ flexDirection: 'column', alignItems: 'stretch', py: 1.5, cursor: 'pointer' }}
+              sx={{
+                flexDirection: 'column', alignItems: 'stretch', py: 1.5, cursor: 'pointer',
+                bgcolor: zone.id === selectedZoneId ? 'action.selected' : undefined,
+              }}
             >
               <Box
                 sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
@@ -120,7 +135,7 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                   ? <ExpandMoreIcon fontSize="small" sx={{ color: 'text.secondary', flexShrink: 0 }} />
                   : <ExpandLessIcon fontSize="small" sx={{ color: 'text.secondary', flexShrink: 0 }} />
                 }
-                <ListItemText primary={zone.label} primaryTypographyProps={{ variant: 'body2', fontWeight: 500 }} sx={{ flex: 1, m: 0 }} />
+                <ListItemText primary={zone.label} slotProps={{ primary: { variant: 'body2', sx: { fontWeight: 500 } } }} sx={{ flex: 1, m: 0 }} />
                 <IconButton size="small" onClick={e => { e.stopPropagation(); deleteZone(zone.id) }}>
                   <DeleteIcon fontSize="small" />
                 </IconButton>
@@ -187,7 +202,10 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                               label="Часть"
                               notched
                               displayEmpty
-                              onChange={e => updateZone(zone.id, { splitIndex: e.target.value === '' ? null : Number(e.target.value) })}
+                              onChange={e => {
+                                const v = e.target.value as number | ''
+                                updateZone(zone.id, { splitIndex: v === '' ? null : Number(v) })
+                              }}
                             >
                               <MenuItem value=""><em>— (не разбивать)</em></MenuItem>
                               {options.map(({ index, label }) => (
@@ -226,7 +244,7 @@ export default function ZoneList({ zones, columns, selectedZoneId, onSelectZone,
                     options={FONT_SIZES.map(String)}
                     value={String(zone.fontSize)}
                     onChange={(_, val) => handleFontSizeCommit(zone, val)}
-                    onBlur={e => handleFontSizeCommit(zone, e.target.value)}
+                    onBlur={e => handleFontSizeCommit(zone, (e.target as HTMLInputElement).value)}
                     onClick={e => e.stopPropagation()}
                     renderInput={params => <TextField {...params} label="Размер" />}
                   />

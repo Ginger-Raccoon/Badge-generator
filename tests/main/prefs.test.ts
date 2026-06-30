@@ -1,8 +1,8 @@
 import { describe, test, expect, beforeEach, afterEach } from 'vitest'
 import { mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { loadPrefs, savePrefs } from '../../src/main/prefs.js'
-import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../src/shared/defaults.js'
+import { loadPrefs, savePrefs } from '../../src/main/prefs'
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../src/shared/defaults'
 
 const TMP = join(process.cwd(), '.tmp-prefs-test')
 

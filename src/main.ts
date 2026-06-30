@@ -1,7 +1,7 @@
 import { app, BrowserWindow, nativeImage } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import './main/ipc.js';
+import './main/ipc';
 
 app.name = 'Бейджик';
 
@@ -14,7 +14,7 @@ const createWindow = () => {
   const icon = nativeImage.createFromPath(iconPath)
 
   if (process.platform === 'darwin') {
-    app.dock.setIcon(icon)
+    app.dock?.setIcon(icon)
   }
 
   const mainWindow = new BrowserWindow({

@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { PDFDocument } from 'pdf-lib'
-import { generatePdf } from '../../src/renderer/utils/generator.js'
+import { generatePdf } from '../../src/renderer/utils/generator'
+import type { ExcelRow } from '../../src/shared/types'
 
 // Минимальный валидный 1×1 PNG для тестов
 const PNG_1x1 = Buffer.from(
@@ -9,7 +10,7 @@ const PNG_1x1 = Buffer.from(
   'base64'
 )
 
-function loadFont(name) {
+function loadFont(name: string) {
   return Array.from(readFileSync(join(process.cwd(), 'public', 'fonts', name)))
 }
 
@@ -55,7 +56,7 @@ describe('generatePdf', () => {
       ptSerif: loadFont('PTSerif-Regular.ttf'),
     }
     const zones = [{ id: '1', x: 100, y: 100, width: 200, height: 20, column: 'Имя', font: 'Roboto', fontSize: 12 }]
-    const rows = [{ Имя: '' }, {}]
+    const rows: ExcelRow[] = [{ Имя: '' }, {}]
 
     await expect(generatePdf({ ...baseArgs, fontBytes, zones, rows })).resolves.toBeDefined()
   })

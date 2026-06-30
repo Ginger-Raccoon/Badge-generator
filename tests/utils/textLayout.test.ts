@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { wrapText, splitValue } from '../../src/renderer/utils/textLayout.js'
+import { wrapText, splitValue } from '../../src/renderer/utils/textLayout'
 
 // measureFn: длина строки в символах (каждый символ = 1 единица)
-const measure = (str, _size) => str.length
+const measure = (str: string, _size: number) => str.length
 
 describe('wrapText', () => {
   it('возвращает одну строку если текст помещается', () => {

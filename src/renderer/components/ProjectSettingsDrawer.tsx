@@ -4,9 +4,18 @@ import {
   FormControl, InputLabel, TextField,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults.js'
+import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults'
+import type { FontEntry, Project } from '../../shared/types'
 
-export default function ProjectSettingsDrawer({ open, onClose, project, prefs, onProjectSettingsChange }) {
+interface ProjectSettingsDrawerProps {
+  open: boolean
+  onClose: () => void
+  project: Project
+  prefs: { defaultFont: string; defaultFontSize: number; customFonts?: FontEntry[] }
+  onProjectSettingsChange: (patch: { projectFont?: string; projectFontSize?: number }) => void
+}
+
+export default function ProjectSettingsDrawer({ open, onClose, project, prefs, onProjectSettingsChange }: ProjectSettingsDrawerProps) {
   const effectiveFont = project.projectFont ?? prefs.defaultFont ?? DEFAULT_FONT
   const effectiveFontSize = project.projectFontSize ?? prefs.defaultFontSize ?? DEFAULT_FONT_SIZE
   const [fontSizeInput, setFontSizeInput] = useState(String(effectiveFontSize))
@@ -27,7 +36,7 @@ export default function ProjectSettingsDrawer({ open, onClose, project, prefs, o
   }
 
   return (
-    <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: 320 } }}>
+    <Drawer anchor="right" open={open} onClose={onClose} slotProps={{ paper: { sx: { width: 320 } } }}>
       <Box sx={{ px: '32px', py: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6" sx={{ flex: 1 }}>Настройки проекта</Typography>
@@ -57,7 +66,7 @@ export default function ProjectSettingsDrawer({ open, onClose, project, prefs, o
           value={fontSizeInput}
           onChange={e => setFontSizeInput(e.target.value)}
           onBlur={handleFontSizeBlur}
-          inputProps={{ min: 6, max: 200 }}
+          slotProps={{ htmlInput: { min: 6, max: 200 } }}
           sx={{ mb: 2 }}
         />
       </Box>
