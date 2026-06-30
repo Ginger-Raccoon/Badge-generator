@@ -1,7 +1,7 @@
 import { PDFDocument, PDFFont } from 'pdf-lib'
 import fontkit from '@pdf-lib/fontkit'
 import { wrapText, splitValue } from './textLayout'
-import type { ColumnSplits, ExcelRow, FontBytes } from '../../shared/types'
+import type { ColumnSplits, ExcelRow, FontBytes, TemplateImageFormat } from '../../shared/types'
 
 interface GeneratorZone {
   column: string
@@ -16,7 +16,8 @@ interface GeneratorZone {
 }
 
 interface GeneratePdfArgs {
-  pngBytes: Uint8Array
+  imageBytes: Uint8Array
+  imageFormat?: TemplateImageFormat
   psdWidth: number
   psdHeight: number
   dpi: number
@@ -27,7 +28,7 @@ interface GeneratePdfArgs {
   columnSplits?: ColumnSplits
 }
 
-export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontBytes, zones, rows, onProgress, columnSplits = {} }: GeneratePdfArgs): Promise<Uint8Array> {
+export async function generatePdf({ imageBytes, imageFormat = 'png', psdWidth, psdHeight, dpi, fontBytes, zones, rows, onProgress, columnSplits = {} }: GeneratePdfArgs): Promise<Uint8Array> {
   const scale = 72 / dpi
   const pageWidth = psdWidth * scale
   const pageHeight = psdHeight * scale
@@ -42,7 +43,9 @@ export async function generatePdf({ pngBytes, psdWidth, psdHeight, dpi, fontByte
     fonts[name] = await outputDoc.embedFont(new Uint8Array(bytes))
   }
 
-  const pngImage = await outputDoc.embedPng(new Uint8Array(pngBytes))
+  const pngImage = imageFormat === 'jpeg'
+    ? await outputDoc.embedJpg(new Uint8Array(imageBytes))
+    : await outputDoc.embedPng(new Uint8Array(imageBytes))
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i]

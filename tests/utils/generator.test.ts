@@ -15,7 +15,7 @@ function loadFont(name: string) {
 }
 
 const baseArgs = {
-  pngBytes: PNG_1x1,
+  imageBytes: PNG_1x1,
   psdWidth: 595,
   psdHeight: 842,
   dpi: 72,

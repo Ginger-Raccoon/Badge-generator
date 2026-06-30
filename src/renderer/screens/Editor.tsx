@@ -11,7 +11,7 @@ import PSDViewer from '../components/PSDViewer'
 import ZoneList from '../components/ZoneList'
 import { readExcel } from '../utils/excel'
 import { generatePdf } from '../utils/generator'
-import { parsePsd } from '../utils/psd'
+import { parseTemplate } from '../utils/psd'
 import ProjectSettingsDrawer from '../components/ProjectSettingsDrawer'
 import { applyProjectSettings } from '../utils/zones'
 import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults'
@@ -81,7 +81,7 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
       const missing = []
       if (project.templatePsdPath) {
         const exists = await window.api.fileExists(project.templatePsdPath)
-        if (!exists) missing.push('PSD-шаблон')
+        if (!exists) missing.push('Шаблон')
       }
       if (project.excelPath) {
         const exists = await window.api.fileExists(project.excelPath)
@@ -110,7 +110,7 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
   }
 
   async function handleLoadPsd() {
-    const filePath = await window.api.openFileDialog([{ name: 'Photoshop', extensions: ['psd'] }])
+    const filePath = await window.api.openFileDialog([{ name: 'Шаблон', extensions: ['psd', 'png', 'jpg', 'jpeg'] }])
     if (!filePath) return
     setParsedPsd(null)
     setDpiWarning(null)
@@ -172,7 +172,7 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
       let psd = parsedPsd
       if (!psd) {
         const bytes = await window.api.readFileBytes(project.templatePsdPath!)
-        psd = await parsePsd(new Uint8Array(bytes))
+        psd = await parseTemplate(new Uint8Array(bytes), project.templatePsdPath!)
       }
       const effectiveDpi = project.templateDpi ?? psd.resolution
       const excelBytes = await window.api.readFileBytes(project.excelPath!)
@@ -183,7 +183,8 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
       const { rows: excelRows } = readExcel(new Uint8Array(excelBytes))
 
       const pdfBytes = await generatePdf({
-        pngBytes: psd.pngBytes,
+        imageBytes: psd.imageBytes,
+        imageFormat: psd.imageFormat,
         psdWidth: psd.width,
         psdHeight: psd.height,
         dpi: effectiveDpi,
@@ -209,7 +210,9 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
 
   const psdName = project.templatePsdPath
     ? project.templatePsdPath.split(/[\\/]/).pop()
-    : 'PSD не загружен'
+    : 'Шаблон не загружен'
+
+  const isPsdTemplate = project.templatePsdPath?.toLowerCase().endsWith('.psd') ?? false
 
   const excelName = project.excelPath
     ? project.excelPath.split(/[\\/]/).pop()
@@ -279,7 +282,10 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
               ? 'DPI не задан в файле — размер страницы PDF может быть неверным.'
               : `Обнаружен экранный DPI (${dpiWarning.detected} dpi) — файл, вероятно, создан для экрана, а не для печати.`
             }
-            {' '}Исправьте в Photoshop: Image → Image Size → Resolution (без галки Resample), затем перезагрузите файл.
+            {' '}{isPsdTemplate
+              ? 'Исправьте в Photoshop: Image → Image Size → Resolution (без галки Resample), затем перезагрузите файл.'
+              : 'Укажите корректный DPI вручную в поле выше.'
+            }
           </Alert>
         )}
       </AppBar>

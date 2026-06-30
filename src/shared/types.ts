@@ -53,8 +53,11 @@ export interface FontBytes {
 
 export type ExcelRow = Record<string, string | number>
 
+export type TemplateImageFormat = 'png' | 'jpeg'
+
 export interface ParsedPsd {
-  pngBytes: Uint8Array<ArrayBuffer>
+  imageBytes: Uint8Array<ArrayBuffer>
+  imageFormat: TemplateImageFormat
   width: number
   height: number
   resolution: number

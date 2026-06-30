@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Box, Typography } from '@mui/material'
-import { parsePsd } from '../utils/psd'
+import { parseTemplate } from '../utils/psd'
 import ZoneRect, { type Corner } from './ZoneRect'
 import { canvasToDoc, docToCanvas } from '../utils/coordinates'
 import { wrapText, splitValue } from '../utils/textLayout'
@@ -69,11 +69,11 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
     async function render() {
       const bytes = await window.api.readFileBytes(psdPath!)
       if (cancelled) return
-      const parsed = await parsePsd(new Uint8Array(bytes))
+      const parsed = await parseTemplate(new Uint8Array(bytes), psdPath!)
       if (cancelled) return
       onPsdParsed?.(parsed)
 
-      const blob = new Blob([parsed.pngBytes], { type: 'image/png' })
+      const blob = new Blob([parsed.imageBytes], { type: parsed.imageFormat === 'jpeg' ? 'image/jpeg' : 'image/png' })
       const bitmap = await createImageBitmap(blob)
       if (cancelled) return
 
@@ -303,7 +303,7 @@ export default function PSDViewer({ psdPath, zones, onZonesChange, selectedZoneI
   if (!psdPath) {
     return (
       <Box sx={{ p: 4, color: 'text.secondary' }}>
-        <Typography>Загрузите PSD-шаблон</Typography>
+        <Typography>Загрузите шаблон</Typography>
       </Box>
     )
   }
