@@ -9,13 +9,14 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import SettingsIcon from '@mui/icons-material/Settings'
 import PSDViewer from '../components/PSDViewer'
 import ZoneList from '../components/ZoneList'
+import PageLayoutDialog from '../components/PageLayoutDialog'
 import { readExcel } from '../utils/excel'
 import { generatePdf } from '../utils/generator'
 import { parseTemplate } from '../utils/psd'
 import ProjectSettingsDrawer from '../components/ProjectSettingsDrawer'
 import { applyProjectSettings } from '../utils/zones'
 import { DEFAULT_FONT, DEFAULT_FONT_SIZE } from '../../shared/defaults'
-import type { ExcelRow, FontEntry, ParsedPsd, Project, Zone } from '../../shared/types'
+import type { ExcelRow, FontEntry, PageLayout, ParsedPsd, Project, Zone } from '../../shared/types'
 
 interface EditorProps {
   project: Project
@@ -56,6 +57,7 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
   const [pageInput, setPageInput] = useState('1')
   const [prefs, setPrefs] = useState<EditorPrefs>({ defaultFont: DEFAULT_FONT, defaultFontSize: DEFAULT_FONT_SIZE })
   const [projectSettingsOpen, setProjectSettingsOpen] = useState(false)
+  const [layoutDialogOpen, setLayoutDialogOpen] = useState(false)
   const [sideWidth, setSideWidth] = useState(300)
   const dragging = useRef(false)
 
@@ -164,7 +166,22 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
     await save({ ...project, ...patch, zones: updatedZones })
   }
 
-  async function handleGenerate() {
+  async function openLayoutDialog() {
+    if (!parsedPsd) {
+      const bytes = await window.api.readFileBytes(project.templatePsdPath!)
+      const psd = await parseTemplate(new Uint8Array(bytes), project.templatePsdPath!)
+      setParsedPsd(psd)
+    }
+    setLayoutDialogOpen(true)
+  }
+
+  async function handleLayoutConfirm(layout: PageLayout) {
+    setLayoutDialogOpen(false)
+    await save({ ...project, pageLayout: layout })
+    await handleGenerate(layout)
+  }
+
+  async function handleGenerate(layout: PageLayout) {
     if (generating) return
     setGenerating(true)
     setGenProgress(0)
@@ -192,6 +209,7 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
         zones: project.zones,
         rows: excelRows,
         columnSplits: project.columnSplits ?? {},
+        pageLayout: layout,
         onProgress: (done, total) => setGenProgress(Math.round((done / total) * 100)),
       })
 
@@ -246,7 +264,7 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
             variant="contained"
             size="small"
             disabled={!canGenerate}
-            onClick={handleGenerate}
+            onClick={openLayoutDialog}
           >
             Генерировать
           </Button>
@@ -378,6 +396,20 @@ export default function Editor({ project, onProjectUpdate, onBack }: EditorProps
         prefs={prefs}
         onProjectSettingsChange={handleProjectSettingsChange}
       />
+      {parsedPsd && (
+        <PageLayoutDialog
+          open={layoutDialogOpen}
+          onClose={() => setLayoutDialogOpen(false)}
+          onConfirm={handleLayoutConfirm}
+          initialLayout={project.pageLayout ?? null}
+          badgeWidthPx={parsedPsd.width}
+          badgeHeightPx={parsedPsd.height}
+          dpi={dpi ?? parsedPsd.resolution}
+          imageBytes={parsedPsd.imageBytes}
+          imageFormat={parsedPsd.imageFormat}
+          totalBadges={rows.length}
+        />
+      )}
     </Box>
   )
 }

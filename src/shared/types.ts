@@ -14,6 +14,20 @@ export interface Zone {
 
 export type ColumnSplits = Record<string, string>
 
+export type PageFormat = 'A4' | 'Letter' | 'custom'
+
+export interface PageLayout {
+  pageFormat: PageFormat
+  customWidthMm: number | null
+  customHeightMm: number | null
+  columns: number
+  rows: number
+  marginMm: number
+  gapMm: number
+  cropMarks: boolean
+  badgeScalePercent?: number
+}
+
 export interface Project {
   version: number
   name: string
@@ -25,6 +39,7 @@ export interface Project {
   projectFont: string | null
   projectFontSize: number | null
   columnSplits?: ColumnSplits
+  pageLayout?: PageLayout | null
 }
 
 export interface FontEntry {

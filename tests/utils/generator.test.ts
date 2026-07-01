@@ -61,6 +61,35 @@ describe('generatePdf', () => {
     await expect(generatePdf({ ...baseArgs, fontBytes, zones, rows })).resolves.toBeDefined()
   })
 
+  test('pageLayout группирует несколько бейджей на одной странице', async () => {
+    const fontBytes = {
+      roboto: loadFont('Roboto-Regular.ttf'),
+      ptSerif: loadFont('PTSerif-Regular.ttf'),
+    }
+    const zones = [{ id: '1', x: 100, y: 100, width: 200, height: 20, column: 'Имя', font: 'Roboto', fontSize: 12 }]
+    const rows = [{ Имя: 'Иван' }, { Имя: 'Анна' }, { Имя: 'Пётр' }, { Имя: 'Олег' }, { Имя: 'Юля' }]
+    const pageLayout = {
+      pageFormat: 'A4' as const,
+      customWidthMm: null,
+      customHeightMm: null,
+      columns: 2,
+      rows: 2,
+      marginMm: 10,
+      gapMm: 5,
+      cropMarks: false,
+    }
+
+    const result = await generatePdf({ ...baseArgs, fontBytes, zones, rows, pageLayout })
+    const doc = await PDFDocument.load(result)
+
+    // 5 бейджей по 4 на страницу => 2 страницы
+    expect(doc.getPageCount()).toBe(2)
+    const { width, height } = doc.getPage(0).getSize()
+    // A4 в points (72/25.4 на мм)
+    expect(width).toBeCloseTo(210 * 72 / 25.4, 1)
+    expect(height).toBeCloseTo(297 * 72 / 25.4, 1)
+  })
+
   test('кастомные шрифты встраиваются и применяются к зонам', async () => {
     const fontBytes = {
       roboto: loadFont('Roboto-Regular.ttf'),
