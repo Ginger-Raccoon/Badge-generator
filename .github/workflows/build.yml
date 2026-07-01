@@ -27,6 +27,10 @@ jobs:
       - name: Make
         run: npm run make
 
+      - name: Add unquarantine helper (macOS)
+        if: runner.os == 'macOS'
+        run: cp scripts/unquarantine-mac.command scripts/README-mac.md out/make/
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
